@@ -1,0 +1,34 @@
+package: "model"
+
+models:
+- name: share
+  relations:
+    - model: share_plan
+      rel: hasOne
+    - model: attachment
+      rel: hasMany
+    - model: share_user_rel
+      rel: hasMany
+  definition:
+    soft_delete: true
+    fields:
+    - name: id
+      type: int64
+    - name: subject
+      type: string
+    - name: description
+      type: string
+    - name: subject_type
+      type: string
+    - name: status
+      type: string
+    - name: share_user
+      type: string
+    - name: create_user_id
+      type: int64
+    - name: note
+      type: string
+    - name: like_count
+      type: int64
+    - name: join_count
+      type: int64

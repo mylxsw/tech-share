@@ -1,0 +1,18 @@
+package: "model"
+
+models:
+- name: share_user_rel
+  relations:
+    - model: user
+      rel: belongsTo
+  definition:
+    without_update_time: true
+    fields:
+    - name: id
+      type: int64
+    - name: share_id
+      type: int64
+    - name: user_id
+      type: int64
+    - name: rel_type
+      type: int8

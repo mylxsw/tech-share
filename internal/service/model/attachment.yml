@@ -1,0 +1,20 @@
+package: "model"
+
+models:
+- name: attachment
+  relations:
+    - model: share
+      rel: belongsTo
+  without_update_time: true
+  definition:
+    fields:
+    - name: id
+      type: int64
+    - name: share_id
+      type: int64
+    - name: name
+      type: string 
+    - name: atta_type
+      type: string 
+    - name: atta_path
+      type: string

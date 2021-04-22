@@ -1,0 +1,12 @@
+package: "model"
+
+models:
+- name: user
+  definition:
+    fields:
+    - name: id
+      type: int64
+    - name: uuid
+      type: string
+    - name: name
+      type: string

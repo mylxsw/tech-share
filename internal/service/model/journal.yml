@@ -1,0 +1,15 @@
+package: "model"
+
+models:
+- name: journal
+  definition:
+    without_update_time: true
+    fields:
+    - name: id
+      type: int64
+    - name: action
+      type: string
+    - name: params
+      type: string
+    - name: trigger_user_id
+      type: int64

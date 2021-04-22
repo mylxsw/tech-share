@@ -1,0 +1,22 @@
+package: "model"
+
+models:
+- name: share_plan
+  relations:
+    - model: share
+      rel: belongsTo
+  definition:
+    table_name: share_plan
+    fields:
+    - name: id
+      type: int64
+    - name: share_id
+      type: int64
+    - name: share_at
+      type: time.Time
+    - name: plan_duration
+      type: int
+    - name: real_duration
+      type: int
+    - name: note
+      type: string
