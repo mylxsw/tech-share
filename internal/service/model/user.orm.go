@@ -49,52 +49,112 @@ type userOriginal struct {
 }
 
 // Staled identify whether the object has been modified
-func (inst *User) Staled() bool {
+func (inst *User) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &userOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.Uuid != inst.original.Uuid {
-		return true
-	}
-	if inst.Name != inst.original.Name {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.Uuid != inst.original.Uuid {
+			return true
+		}
+		if inst.Name != inst.original.Name {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "uuid":
+				if inst.Uuid != inst.original.Uuid {
+					return true
+				}
+			case "name":
+				if inst.Name != inst.original.Name {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *User) StaledKV() query.KV {
+func (inst *User) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &userOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.Uuid != inst.original.Uuid {
-		kv["uuid"] = inst.Uuid
-	}
-	if inst.Name != inst.original.Name {
-		kv["name"] = inst.Name
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		kv["updated_at"] = inst.UpdatedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.Uuid != inst.original.Uuid {
+			kv["uuid"] = inst.Uuid
+		}
+		if inst.Name != inst.original.Name {
+			kv["name"] = inst.Name
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			kv["updated_at"] = inst.UpdatedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "uuid":
+				if inst.Uuid != inst.original.Uuid {
+					kv["uuid"] = inst.Uuid
+				}
+			case "name":
+				if inst.Name != inst.original.Name {
+					kv["name"] = inst.Name
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					kv["updated_at"] = inst.UpdatedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -198,15 +258,37 @@ type UserPlain struct {
 	UpdatedAt time.Time
 }
 
-func (w UserPlain) ToUser() User {
-	return User{
+func (w UserPlain) ToUser(allows ...string) User {
+	if len(allows) == 0 {
+		return User{
 
-		Id:        null.IntFrom(int64(w.Id)),
-		Uuid:      null.StringFrom(w.Uuid),
-		Name:      null.StringFrom(w.Name),
-		CreatedAt: null.TimeFrom(w.CreatedAt),
-		UpdatedAt: null.TimeFrom(w.UpdatedAt),
+			Id:        null.IntFrom(int64(w.Id)),
+			Uuid:      null.StringFrom(w.Uuid),
+			Name:      null.StringFrom(w.Name),
+			CreatedAt: null.TimeFrom(w.CreatedAt),
+			UpdatedAt: null.TimeFrom(w.UpdatedAt),
+		}
 	}
+
+	res := User{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "uuid":
+			res.Uuid = null.StringFrom(w.Uuid)
+		case "name":
+			res.Name = null.StringFrom(w.Name)
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		case "updated_at":
+			res.UpdatedAt = null.TimeFrom(w.UpdatedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -238,6 +320,25 @@ type UserModel struct {
 }
 
 var userTableName = "user"
+
+const (
+	UserFieldId        = "id"
+	UserFieldUuid      = "uuid"
+	UserFieldName      = "name"
+	UserFieldCreatedAt = "created_at"
+	UserFieldUpdatedAt = "updated_at"
+)
+
+// UserFields return all fields in User model
+func UserFields() []string {
+	return []string{
+		"id",
+		"uuid",
+		"name",
+		"created_at",
+		"updated_at",
+	}
+}
 
 func SetUserTable(tableName string) {
 	userTableName = tableName
@@ -490,18 +591,18 @@ func (m *UserModel) SaveAll(users []User) ([]int64, error) {
 }
 
 // Save save a user to database
-func (m *UserModel) Save(user User) (int64, error) {
-	return m.Create(user.StaledKV())
+func (m *UserModel) Save(user User, onlyFields ...string) (int64, error) {
+	return m.Create(user.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new user or update it when it has a id > 0
-func (m *UserModel) SaveOrUpdate(user User) (id int64, updated bool, err error) {
+func (m *UserModel) SaveOrUpdate(user User, onlyFields ...string) (id int64, updated bool, err error) {
 	if user.Id.Int64 > 0 {
-		_, _err := m.UpdateById(user.Id.Int64, user)
+		_, _err := m.UpdateById(user.Id.Int64, user, onlyFields...)
 		return user.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(user)
+	_id, _err := m.Save(user, onlyFields...)
 	return _id, false, _err
 }
 
@@ -530,9 +631,14 @@ func (m *UserModel) Update(user User, builders ...query.SQLBuilder) (int64, erro
 	return m.UpdateFields(user.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *UserModel) UpdatePart(user User, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(user.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *UserModel) UpdateById(id int64, user User) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(user)
+func (m *UserModel) UpdateById(id int64, user User, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(user.StaledKV(onlyFields...))
 }
 
 // Delete remove a model

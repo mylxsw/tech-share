@@ -30,7 +30,7 @@ type Share struct {
 	Subject      null.String
 	Description  null.String
 	SubjectType  null.String
-	Status       null.String
+	Status       null.Int
 	ShareUser    null.String
 	CreateUserId null.Int
 	Note         null.String
@@ -58,7 +58,7 @@ type shareOriginal struct {
 	Subject      null.String
 	Description  null.String
 	SubjectType  null.String
-	Status       null.String
+	Status       null.Int
 	ShareUser    null.String
 	CreateUserId null.Int
 	Note         null.String
@@ -70,100 +70,224 @@ type shareOriginal struct {
 }
 
 // Staled identify whether the object has been modified
-func (inst *Share) Staled() bool {
+func (inst *Share) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &shareOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.Subject != inst.original.Subject {
-		return true
-	}
-	if inst.Description != inst.original.Description {
-		return true
-	}
-	if inst.SubjectType != inst.original.SubjectType {
-		return true
-	}
-	if inst.Status != inst.original.Status {
-		return true
-	}
-	if inst.ShareUser != inst.original.ShareUser {
-		return true
-	}
-	if inst.CreateUserId != inst.original.CreateUserId {
-		return true
-	}
-	if inst.Note != inst.original.Note {
-		return true
-	}
-	if inst.LikeCount != inst.original.LikeCount {
-		return true
-	}
-	if inst.JoinCount != inst.original.JoinCount {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		return true
-	}
-	if inst.DeletedAt != inst.original.DeletedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.Subject != inst.original.Subject {
+			return true
+		}
+		if inst.Description != inst.original.Description {
+			return true
+		}
+		if inst.SubjectType != inst.original.SubjectType {
+			return true
+		}
+		if inst.Status != inst.original.Status {
+			return true
+		}
+		if inst.ShareUser != inst.original.ShareUser {
+			return true
+		}
+		if inst.CreateUserId != inst.original.CreateUserId {
+			return true
+		}
+		if inst.Note != inst.original.Note {
+			return true
+		}
+		if inst.LikeCount != inst.original.LikeCount {
+			return true
+		}
+		if inst.JoinCount != inst.original.JoinCount {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			return true
+		}
+		if inst.DeletedAt != inst.original.DeletedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "subject":
+				if inst.Subject != inst.original.Subject {
+					return true
+				}
+			case "description":
+				if inst.Description != inst.original.Description {
+					return true
+				}
+			case "subject_type":
+				if inst.SubjectType != inst.original.SubjectType {
+					return true
+				}
+			case "status":
+				if inst.Status != inst.original.Status {
+					return true
+				}
+			case "share_user":
+				if inst.ShareUser != inst.original.ShareUser {
+					return true
+				}
+			case "create_user_id":
+				if inst.CreateUserId != inst.original.CreateUserId {
+					return true
+				}
+			case "note":
+				if inst.Note != inst.original.Note {
+					return true
+				}
+			case "like_count":
+				if inst.LikeCount != inst.original.LikeCount {
+					return true
+				}
+			case "join_count":
+				if inst.JoinCount != inst.original.JoinCount {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					return true
+				}
+			case "deleted_at":
+				if inst.DeletedAt != inst.original.DeletedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *Share) StaledKV() query.KV {
+func (inst *Share) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &shareOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.Subject != inst.original.Subject {
-		kv["subject"] = inst.Subject
-	}
-	if inst.Description != inst.original.Description {
-		kv["description"] = inst.Description
-	}
-	if inst.SubjectType != inst.original.SubjectType {
-		kv["subject_type"] = inst.SubjectType
-	}
-	if inst.Status != inst.original.Status {
-		kv["status"] = inst.Status
-	}
-	if inst.ShareUser != inst.original.ShareUser {
-		kv["share_user"] = inst.ShareUser
-	}
-	if inst.CreateUserId != inst.original.CreateUserId {
-		kv["create_user_id"] = inst.CreateUserId
-	}
-	if inst.Note != inst.original.Note {
-		kv["note"] = inst.Note
-	}
-	if inst.LikeCount != inst.original.LikeCount {
-		kv["like_count"] = inst.LikeCount
-	}
-	if inst.JoinCount != inst.original.JoinCount {
-		kv["join_count"] = inst.JoinCount
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		kv["updated_at"] = inst.UpdatedAt
-	}
-	if inst.DeletedAt != inst.original.DeletedAt {
-		kv["deleted_at"] = inst.DeletedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.Subject != inst.original.Subject {
+			kv["subject"] = inst.Subject
+		}
+		if inst.Description != inst.original.Description {
+			kv["description"] = inst.Description
+		}
+		if inst.SubjectType != inst.original.SubjectType {
+			kv["subject_type"] = inst.SubjectType
+		}
+		if inst.Status != inst.original.Status {
+			kv["status"] = inst.Status
+		}
+		if inst.ShareUser != inst.original.ShareUser {
+			kv["share_user"] = inst.ShareUser
+		}
+		if inst.CreateUserId != inst.original.CreateUserId {
+			kv["create_user_id"] = inst.CreateUserId
+		}
+		if inst.Note != inst.original.Note {
+			kv["note"] = inst.Note
+		}
+		if inst.LikeCount != inst.original.LikeCount {
+			kv["like_count"] = inst.LikeCount
+		}
+		if inst.JoinCount != inst.original.JoinCount {
+			kv["join_count"] = inst.JoinCount
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			kv["updated_at"] = inst.UpdatedAt
+		}
+		if inst.DeletedAt != inst.original.DeletedAt {
+			kv["deleted_at"] = inst.DeletedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "subject":
+				if inst.Subject != inst.original.Subject {
+					kv["subject"] = inst.Subject
+				}
+			case "description":
+				if inst.Description != inst.original.Description {
+					kv["description"] = inst.Description
+				}
+			case "subject_type":
+				if inst.SubjectType != inst.original.SubjectType {
+					kv["subject_type"] = inst.SubjectType
+				}
+			case "status":
+				if inst.Status != inst.original.Status {
+					kv["status"] = inst.Status
+				}
+			case "share_user":
+				if inst.ShareUser != inst.original.ShareUser {
+					kv["share_user"] = inst.ShareUser
+				}
+			case "create_user_id":
+				if inst.CreateUserId != inst.original.CreateUserId {
+					kv["create_user_id"] = inst.CreateUserId
+				}
+			case "note":
+				if inst.Note != inst.original.Note {
+					kv["note"] = inst.Note
+				}
+			case "like_count":
+				if inst.LikeCount != inst.original.LikeCount {
+					kv["like_count"] = inst.LikeCount
+				}
+			case "join_count":
+				if inst.JoinCount != inst.original.JoinCount {
+					kv["join_count"] = inst.JoinCount
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					kv["updated_at"] = inst.UpdatedAt
+				}
+			case "deleted_at":
+				if inst.DeletedAt != inst.original.DeletedAt {
+					kv["deleted_at"] = inst.DeletedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -389,7 +513,7 @@ type SharePlain struct {
 	Subject      string
 	Description  string
 	SubjectType  string
-	Status       string
+	Status       int8
 	ShareUser    string
 	CreateUserId int64
 	Note         string
@@ -400,23 +524,61 @@ type SharePlain struct {
 	DeletedAt    time.Time
 }
 
-func (w SharePlain) ToShare() Share {
-	return Share{
+func (w SharePlain) ToShare(allows ...string) Share {
+	if len(allows) == 0 {
+		return Share{
 
-		Id:           null.IntFrom(int64(w.Id)),
-		Subject:      null.StringFrom(w.Subject),
-		Description:  null.StringFrom(w.Description),
-		SubjectType:  null.StringFrom(w.SubjectType),
-		Status:       null.StringFrom(w.Status),
-		ShareUser:    null.StringFrom(w.ShareUser),
-		CreateUserId: null.IntFrom(int64(w.CreateUserId)),
-		Note:         null.StringFrom(w.Note),
-		LikeCount:    null.IntFrom(int64(w.LikeCount)),
-		JoinCount:    null.IntFrom(int64(w.JoinCount)),
-		CreatedAt:    null.TimeFrom(w.CreatedAt),
-		UpdatedAt:    null.TimeFrom(w.UpdatedAt),
-		DeletedAt:    null.TimeFrom(w.DeletedAt),
+			Id:           null.IntFrom(int64(w.Id)),
+			Subject:      null.StringFrom(w.Subject),
+			Description:  null.StringFrom(w.Description),
+			SubjectType:  null.StringFrom(w.SubjectType),
+			Status:       null.IntFrom(int64(w.Status)),
+			ShareUser:    null.StringFrom(w.ShareUser),
+			CreateUserId: null.IntFrom(int64(w.CreateUserId)),
+			Note:         null.StringFrom(w.Note),
+			LikeCount:    null.IntFrom(int64(w.LikeCount)),
+			JoinCount:    null.IntFrom(int64(w.JoinCount)),
+			CreatedAt:    null.TimeFrom(w.CreatedAt),
+			UpdatedAt:    null.TimeFrom(w.UpdatedAt),
+			DeletedAt:    null.TimeFrom(w.DeletedAt),
+		}
 	}
+
+	res := Share{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "subject":
+			res.Subject = null.StringFrom(w.Subject)
+		case "description":
+			res.Description = null.StringFrom(w.Description)
+		case "subject_type":
+			res.SubjectType = null.StringFrom(w.SubjectType)
+		case "status":
+			res.Status = null.IntFrom(int64(w.Status))
+		case "share_user":
+			res.ShareUser = null.StringFrom(w.ShareUser)
+		case "create_user_id":
+			res.CreateUserId = null.IntFrom(int64(w.CreateUserId))
+		case "note":
+			res.Note = null.StringFrom(w.Note)
+		case "like_count":
+			res.LikeCount = null.IntFrom(int64(w.LikeCount))
+		case "join_count":
+			res.JoinCount = null.IntFrom(int64(w.JoinCount))
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		case "updated_at":
+			res.UpdatedAt = null.TimeFrom(w.UpdatedAt)
+		case "deleted_at":
+			res.DeletedAt = null.TimeFrom(w.DeletedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -432,7 +594,7 @@ func (w *Share) ToSharePlain() SharePlain {
 		Subject:      w.Subject.String,
 		Description:  w.Description.String,
 		SubjectType:  w.SubjectType.String,
-		Status:       w.Status.String,
+		Status:       int8(w.Status.Int64),
 		ShareUser:    w.ShareUser.String,
 		CreateUserId: w.CreateUserId.Int64,
 		Note:         w.Note.String,
@@ -456,6 +618,41 @@ type ShareModel struct {
 }
 
 var shareTableName = "share"
+
+const (
+	ShareFieldId           = "id"
+	ShareFieldSubject      = "subject"
+	ShareFieldDescription  = "description"
+	ShareFieldSubjectType  = "subject_type"
+	ShareFieldStatus       = "status"
+	ShareFieldShareUser    = "share_user"
+	ShareFieldCreateUserId = "create_user_id"
+	ShareFieldNote         = "note"
+	ShareFieldLikeCount    = "like_count"
+	ShareFieldJoinCount    = "join_count"
+	ShareFieldCreatedAt    = "created_at"
+	ShareFieldUpdatedAt    = "updated_at"
+	ShareFieldDeletedAt    = "deleted_at"
+)
+
+// ShareFields return all fields in Share model
+func ShareFields() []string {
+	return []string{
+		"id",
+		"subject",
+		"description",
+		"subject_type",
+		"status",
+		"share_user",
+		"create_user_id",
+		"note",
+		"like_count",
+		"join_count",
+		"created_at",
+		"updated_at",
+		"deleted_at",
+	}
+}
 
 func SetShareTable(tableName string) {
 	shareTableName = tableName
@@ -753,18 +950,18 @@ func (m *ShareModel) SaveAll(shares []Share) ([]int64, error) {
 }
 
 // Save save a share to database
-func (m *ShareModel) Save(share Share) (int64, error) {
-	return m.Create(share.StaledKV())
+func (m *ShareModel) Save(share Share, onlyFields ...string) (int64, error) {
+	return m.Create(share.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new share or update it when it has a id > 0
-func (m *ShareModel) SaveOrUpdate(share Share) (id int64, updated bool, err error) {
+func (m *ShareModel) SaveOrUpdate(share Share, onlyFields ...string) (id int64, updated bool, err error) {
 	if share.Id.Int64 > 0 {
-		_, _err := m.UpdateById(share.Id.Int64, share)
+		_, _err := m.UpdateById(share.Id.Int64, share, onlyFields...)
 		return share.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(share)
+	_id, _err := m.Save(share, onlyFields...)
 	return _id, false, _err
 }
 
@@ -793,9 +990,14 @@ func (m *ShareModel) Update(share Share, builders ...query.SQLBuilder) (int64, e
 	return m.UpdateFields(share.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *ShareModel) UpdatePart(share Share, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(share.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *ShareModel) UpdateById(id int64, share Share) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(share)
+func (m *ShareModel) UpdateById(id int64, share Share, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(share.StaledKV(onlyFields...))
 }
 
 // ForceDelete permanently remove a soft deleted model from the database

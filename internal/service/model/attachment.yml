@@ -5,8 +5,8 @@ models:
   relations:
     - model: share
       rel: belongsTo
-  without_update_time: true
   definition:
+    without_update_time: true
     fields:
     - name: id
       type: int64

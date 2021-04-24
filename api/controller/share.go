@@ -101,9 +101,13 @@ func (ctl ShareController) DeleteShare(ctx web.Context, req web.Request, shareSr
 }
 
 // Share get a share detail
-func (ctl ShareController) Share(ctx web.Context, req web.Request) web.Response {
-	// TODO
-	return ctx.JSON(web.M{})
+func (ctl ShareController) Share(ctx web.Context, req web.Request, shareSrv service.ShareService) (*service.ShareDetail, error) {
+	id, err := strconv.Atoi(req.PathVar("id"))
+	if err != nil {
+		return nil, err
+	}
+
+	return shareSrv.GetShareByID(context.TODO(), int64(id))
 }
 
 // LikeShare give a vote to a share
@@ -151,15 +155,30 @@ func (ctl ShareController) LeaveShare(ctx web.Context, req web.Request, shareSrv
 }
 
 // CreateSharePlan create a share plan
-func (ctl ShareController) CreateSharePlan(ctx web.Context, req web.Request) web.Response {
-	// TODO
-	return ctx.JSON(web.M{})
+func (ctl ShareController) CreateSharePlan(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
+	id, err := strconv.Atoi(req.PathVar("id"))
+	if err != nil {
+		return err
+	}
+
+	var plan service.PlanUpdateFields
+	if err := req.Unmarshal(&plan); err != nil {
+		return err
+	}
+
+	_, err = shareSrv.CreateOrUpdatePlan(context.TODO(), int64(id), plan)
+	return err
 }
 
 // CancelSharePlan cancel a share plan
-func (ctl ShareController) CancelSharePlan(ctx web.Context, req web.Request) web.Response {
-	// TODO
-	return ctx.JSON(web.M{})
+func (ctl ShareController) CancelSharePlan(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
+	id, err := strconv.Atoi(req.PathVar("id"))
+	if err != nil {
+		return err
+	}
+
+	_, err = shareSrv.RemovePlan(context.TODO(), int64(id))
+	return err
 }
 
 // UpdateSharePlan update a share plan

@@ -55,70 +55,154 @@ type sharePlanOriginal struct {
 }
 
 // Staled identify whether the object has been modified
-func (inst *SharePlan) Staled() bool {
+func (inst *SharePlan) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &sharePlanOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.ShareId != inst.original.ShareId {
-		return true
-	}
-	if inst.ShareAt != inst.original.ShareAt {
-		return true
-	}
-	if inst.PlanDuration != inst.original.PlanDuration {
-		return true
-	}
-	if inst.RealDuration != inst.original.RealDuration {
-		return true
-	}
-	if inst.Note != inst.original.Note {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.ShareId != inst.original.ShareId {
+			return true
+		}
+		if inst.ShareAt != inst.original.ShareAt {
+			return true
+		}
+		if inst.PlanDuration != inst.original.PlanDuration {
+			return true
+		}
+		if inst.RealDuration != inst.original.RealDuration {
+			return true
+		}
+		if inst.Note != inst.original.Note {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					return true
+				}
+			case "share_at":
+				if inst.ShareAt != inst.original.ShareAt {
+					return true
+				}
+			case "plan_duration":
+				if inst.PlanDuration != inst.original.PlanDuration {
+					return true
+				}
+			case "real_duration":
+				if inst.RealDuration != inst.original.RealDuration {
+					return true
+				}
+			case "note":
+				if inst.Note != inst.original.Note {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *SharePlan) StaledKV() query.KV {
+func (inst *SharePlan) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &sharePlanOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.ShareId != inst.original.ShareId {
-		kv["share_id"] = inst.ShareId
-	}
-	if inst.ShareAt != inst.original.ShareAt {
-		kv["share_at"] = inst.ShareAt
-	}
-	if inst.PlanDuration != inst.original.PlanDuration {
-		kv["plan_duration"] = inst.PlanDuration
-	}
-	if inst.RealDuration != inst.original.RealDuration {
-		kv["real_duration"] = inst.RealDuration
-	}
-	if inst.Note != inst.original.Note {
-		kv["note"] = inst.Note
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		kv["updated_at"] = inst.UpdatedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.ShareId != inst.original.ShareId {
+			kv["share_id"] = inst.ShareId
+		}
+		if inst.ShareAt != inst.original.ShareAt {
+			kv["share_at"] = inst.ShareAt
+		}
+		if inst.PlanDuration != inst.original.PlanDuration {
+			kv["plan_duration"] = inst.PlanDuration
+		}
+		if inst.RealDuration != inst.original.RealDuration {
+			kv["real_duration"] = inst.RealDuration
+		}
+		if inst.Note != inst.original.Note {
+			kv["note"] = inst.Note
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+		if inst.UpdatedAt != inst.original.UpdatedAt {
+			kv["updated_at"] = inst.UpdatedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					kv["share_id"] = inst.ShareId
+				}
+			case "share_at":
+				if inst.ShareAt != inst.original.ShareAt {
+					kv["share_at"] = inst.ShareAt
+				}
+			case "plan_duration":
+				if inst.PlanDuration != inst.original.PlanDuration {
+					kv["plan_duration"] = inst.PlanDuration
+				}
+			case "real_duration":
+				if inst.RealDuration != inst.original.RealDuration {
+					kv["real_duration"] = inst.RealDuration
+				}
+			case "note":
+				if inst.Note != inst.original.Note {
+					kv["note"] = inst.Note
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			case "updated_at":
+				if inst.UpdatedAt != inst.original.UpdatedAt {
+					kv["updated_at"] = inst.UpdatedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -275,18 +359,46 @@ type SharePlanPlain struct {
 	UpdatedAt    time.Time
 }
 
-func (w SharePlanPlain) ToSharePlan() SharePlan {
-	return SharePlan{
+func (w SharePlanPlain) ToSharePlan(allows ...string) SharePlan {
+	if len(allows) == 0 {
+		return SharePlan{
 
-		Id:           null.IntFrom(int64(w.Id)),
-		ShareId:      null.IntFrom(int64(w.ShareId)),
-		ShareAt:      null.TimeFrom(w.ShareAt),
-		PlanDuration: null.IntFrom(int64(w.PlanDuration)),
-		RealDuration: null.IntFrom(int64(w.RealDuration)),
-		Note:         null.StringFrom(w.Note),
-		CreatedAt:    null.TimeFrom(w.CreatedAt),
-		UpdatedAt:    null.TimeFrom(w.UpdatedAt),
+			Id:           null.IntFrom(int64(w.Id)),
+			ShareId:      null.IntFrom(int64(w.ShareId)),
+			ShareAt:      null.TimeFrom(w.ShareAt),
+			PlanDuration: null.IntFrom(int64(w.PlanDuration)),
+			RealDuration: null.IntFrom(int64(w.RealDuration)),
+			Note:         null.StringFrom(w.Note),
+			CreatedAt:    null.TimeFrom(w.CreatedAt),
+			UpdatedAt:    null.TimeFrom(w.UpdatedAt),
+		}
 	}
+
+	res := SharePlan{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "share_id":
+			res.ShareId = null.IntFrom(int64(w.ShareId))
+		case "share_at":
+			res.ShareAt = null.TimeFrom(w.ShareAt)
+		case "plan_duration":
+			res.PlanDuration = null.IntFrom(int64(w.PlanDuration))
+		case "real_duration":
+			res.RealDuration = null.IntFrom(int64(w.RealDuration))
+		case "note":
+			res.Note = null.StringFrom(w.Note)
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		case "updated_at":
+			res.UpdatedAt = null.TimeFrom(w.UpdatedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -321,6 +433,31 @@ type SharePlanModel struct {
 }
 
 var sharePlanTableName = "share_plan"
+
+const (
+	SharePlanFieldId           = "id"
+	SharePlanFieldShareId      = "share_id"
+	SharePlanFieldShareAt      = "share_at"
+	SharePlanFieldPlanDuration = "plan_duration"
+	SharePlanFieldRealDuration = "real_duration"
+	SharePlanFieldNote         = "note"
+	SharePlanFieldCreatedAt    = "created_at"
+	SharePlanFieldUpdatedAt    = "updated_at"
+)
+
+// SharePlanFields return all fields in SharePlan model
+func SharePlanFields() []string {
+	return []string{
+		"id",
+		"share_id",
+		"share_at",
+		"plan_duration",
+		"real_duration",
+		"note",
+		"created_at",
+		"updated_at",
+	}
+}
 
 func SetSharePlanTable(tableName string) {
 	sharePlanTableName = tableName
@@ -588,18 +725,18 @@ func (m *SharePlanModel) SaveAll(sharePlans []SharePlan) ([]int64, error) {
 }
 
 // Save save a share_plan to database
-func (m *SharePlanModel) Save(sharePlan SharePlan) (int64, error) {
-	return m.Create(sharePlan.StaledKV())
+func (m *SharePlanModel) Save(sharePlan SharePlan, onlyFields ...string) (int64, error) {
+	return m.Create(sharePlan.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new share_plan or update it when it has a id > 0
-func (m *SharePlanModel) SaveOrUpdate(sharePlan SharePlan) (id int64, updated bool, err error) {
+func (m *SharePlanModel) SaveOrUpdate(sharePlan SharePlan, onlyFields ...string) (id int64, updated bool, err error) {
 	if sharePlan.Id.Int64 > 0 {
-		_, _err := m.UpdateById(sharePlan.Id.Int64, sharePlan)
+		_, _err := m.UpdateById(sharePlan.Id.Int64, sharePlan, onlyFields...)
 		return sharePlan.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(sharePlan)
+	_id, _err := m.Save(sharePlan, onlyFields...)
 	return _id, false, _err
 }
 
@@ -628,9 +765,14 @@ func (m *SharePlanModel) Update(sharePlan SharePlan, builders ...query.SQLBuilde
 	return m.UpdateFields(sharePlan.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *SharePlanModel) UpdatePart(sharePlan SharePlan, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(sharePlan.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *SharePlanModel) UpdateById(id int64, sharePlan SharePlan) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(sharePlan)
+func (m *SharePlanModel) UpdateById(id int64, sharePlan SharePlan, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(sharePlan.StaledKV(onlyFields...))
 }
 
 // Delete remove a model

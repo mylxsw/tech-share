@@ -1,11 +1,14 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/gorilla/mux"
 	"github.com/mylxsw/asteria/log"
+	"github.com/mylxsw/eloquent/query"
 	"github.com/mylxsw/glacier/infra"
 	"github.com/mylxsw/glacier/listener"
 	"github.com/mylxsw/glacier/web"
@@ -32,8 +35,17 @@ func (s Provider) Register(app infra.Binder) {}
 func (s Provider) Boot(app infra.Resolver)   {}
 
 func (s Provider) exceptionHandler(ctx web.Context, err interface{}) web.Response {
+	if err2, ok := err.(error); ok {
+		if errors.Is(err2, query.ErrNoResult) {
+			return ctx.JSONWithCode(web.M{
+				"error": fmt.Sprintf("%v", err2),
+			}, http.StatusNotFound)
+		}
+	}
 	log.Errorf("error: %v, call stack: %s", err, debug.Stack())
-	return nil
+	return ctx.JSONWithCode(web.M{
+		"error": fmt.Sprintf("%v", err),
+	}, http.StatusInternalServerError)
 }
 
 func (s Provider) muxRoutes(cc infra.Resolver, router *mux.Router) {

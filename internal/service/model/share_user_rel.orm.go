@@ -49,52 +49,112 @@ type shareUserRelOriginal struct {
 }
 
 // Staled identify whether the object has been modified
-func (inst *ShareUserRel) Staled() bool {
+func (inst *ShareUserRel) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &shareUserRelOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.ShareId != inst.original.ShareId {
-		return true
-	}
-	if inst.UserId != inst.original.UserId {
-		return true
-	}
-	if inst.RelType != inst.original.RelType {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.ShareId != inst.original.ShareId {
+			return true
+		}
+		if inst.UserId != inst.original.UserId {
+			return true
+		}
+		if inst.RelType != inst.original.RelType {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					return true
+				}
+			case "user_id":
+				if inst.UserId != inst.original.UserId {
+					return true
+				}
+			case "rel_type":
+				if inst.RelType != inst.original.RelType {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *ShareUserRel) StaledKV() query.KV {
+func (inst *ShareUserRel) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &shareUserRelOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.ShareId != inst.original.ShareId {
-		kv["share_id"] = inst.ShareId
-	}
-	if inst.UserId != inst.original.UserId {
-		kv["user_id"] = inst.UserId
-	}
-	if inst.RelType != inst.original.RelType {
-		kv["rel_type"] = inst.RelType
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.ShareId != inst.original.ShareId {
+			kv["share_id"] = inst.ShareId
+		}
+		if inst.UserId != inst.original.UserId {
+			kv["user_id"] = inst.UserId
+		}
+		if inst.RelType != inst.original.RelType {
+			kv["rel_type"] = inst.RelType
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					kv["share_id"] = inst.ShareId
+				}
+			case "user_id":
+				if inst.UserId != inst.original.UserId {
+					kv["user_id"] = inst.UserId
+				}
+			case "rel_type":
+				if inst.RelType != inst.original.RelType {
+					kv["rel_type"] = inst.RelType
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -248,15 +308,37 @@ type ShareUserRelPlain struct {
 	CreatedAt time.Time
 }
 
-func (w ShareUserRelPlain) ToShareUserRel() ShareUserRel {
-	return ShareUserRel{
+func (w ShareUserRelPlain) ToShareUserRel(allows ...string) ShareUserRel {
+	if len(allows) == 0 {
+		return ShareUserRel{
 
-		Id:        null.IntFrom(int64(w.Id)),
-		ShareId:   null.IntFrom(int64(w.ShareId)),
-		UserId:    null.IntFrom(int64(w.UserId)),
-		RelType:   null.IntFrom(int64(w.RelType)),
-		CreatedAt: null.TimeFrom(w.CreatedAt),
+			Id:        null.IntFrom(int64(w.Id)),
+			ShareId:   null.IntFrom(int64(w.ShareId)),
+			UserId:    null.IntFrom(int64(w.UserId)),
+			RelType:   null.IntFrom(int64(w.RelType)),
+			CreatedAt: null.TimeFrom(w.CreatedAt),
+		}
 	}
+
+	res := ShareUserRel{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "share_id":
+			res.ShareId = null.IntFrom(int64(w.ShareId))
+		case "user_id":
+			res.UserId = null.IntFrom(int64(w.UserId))
+		case "rel_type":
+			res.RelType = null.IntFrom(int64(w.RelType))
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -288,6 +370,25 @@ type ShareUserRelModel struct {
 }
 
 var shareUserRelTableName = "share_user_rel"
+
+const (
+	ShareUserRelFieldId        = "id"
+	ShareUserRelFieldShareId   = "share_id"
+	ShareUserRelFieldUserId    = "user_id"
+	ShareUserRelFieldRelType   = "rel_type"
+	ShareUserRelFieldCreatedAt = "created_at"
+)
+
+// ShareUserRelFields return all fields in ShareUserRel model
+func ShareUserRelFields() []string {
+	return []string{
+		"id",
+		"share_id",
+		"user_id",
+		"rel_type",
+		"created_at",
+	}
+}
 
 func SetShareUserRelTable(tableName string) {
 	shareUserRelTableName = tableName
@@ -536,18 +637,18 @@ func (m *ShareUserRelModel) SaveAll(shareUserRels []ShareUserRel) ([]int64, erro
 }
 
 // Save save a share_user_rel to database
-func (m *ShareUserRelModel) Save(shareUserRel ShareUserRel) (int64, error) {
-	return m.Create(shareUserRel.StaledKV())
+func (m *ShareUserRelModel) Save(shareUserRel ShareUserRel, onlyFields ...string) (int64, error) {
+	return m.Create(shareUserRel.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new share_user_rel or update it when it has a id > 0
-func (m *ShareUserRelModel) SaveOrUpdate(shareUserRel ShareUserRel) (id int64, updated bool, err error) {
+func (m *ShareUserRelModel) SaveOrUpdate(shareUserRel ShareUserRel, onlyFields ...string) (id int64, updated bool, err error) {
 	if shareUserRel.Id.Int64 > 0 {
-		_, _err := m.UpdateById(shareUserRel.Id.Int64, shareUserRel)
+		_, _err := m.UpdateById(shareUserRel.Id.Int64, shareUserRel, onlyFields...)
 		return shareUserRel.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(shareUserRel)
+	_id, _err := m.Save(shareUserRel, onlyFields...)
 	return _id, false, _err
 }
 
@@ -574,9 +675,14 @@ func (m *ShareUserRelModel) Update(shareUserRel ShareUserRel, builders ...query.
 	return m.UpdateFields(shareUserRel.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *ShareUserRelModel) UpdatePart(shareUserRel ShareUserRel, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(shareUserRel.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *ShareUserRelModel) UpdateById(id int64, shareUserRel ShareUserRel) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(shareUserRel)
+func (m *ShareUserRelModel) UpdateById(id int64, shareUserRel ShareUserRel, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(shareUserRel.StaledKV(onlyFields...))
 }
 
 // Delete remove a model

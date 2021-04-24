@@ -49,52 +49,112 @@ type journalOriginal struct {
 }
 
 // Staled identify whether the object has been modified
-func (inst *Journal) Staled() bool {
+func (inst *Journal) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &journalOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.Action != inst.original.Action {
-		return true
-	}
-	if inst.Params != inst.original.Params {
-		return true
-	}
-	if inst.TriggerUserId != inst.original.TriggerUserId {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.Action != inst.original.Action {
+			return true
+		}
+		if inst.Params != inst.original.Params {
+			return true
+		}
+		if inst.TriggerUserId != inst.original.TriggerUserId {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "action":
+				if inst.Action != inst.original.Action {
+					return true
+				}
+			case "params":
+				if inst.Params != inst.original.Params {
+					return true
+				}
+			case "trigger_user_id":
+				if inst.TriggerUserId != inst.original.TriggerUserId {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *Journal) StaledKV() query.KV {
+func (inst *Journal) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &journalOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.Action != inst.original.Action {
-		kv["action"] = inst.Action
-	}
-	if inst.Params != inst.original.Params {
-		kv["params"] = inst.Params
-	}
-	if inst.TriggerUserId != inst.original.TriggerUserId {
-		kv["trigger_user_id"] = inst.TriggerUserId
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.Action != inst.original.Action {
+			kv["action"] = inst.Action
+		}
+		if inst.Params != inst.original.Params {
+			kv["params"] = inst.Params
+		}
+		if inst.TriggerUserId != inst.original.TriggerUserId {
+			kv["trigger_user_id"] = inst.TriggerUserId
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "action":
+				if inst.Action != inst.original.Action {
+					kv["action"] = inst.Action
+				}
+			case "params":
+				if inst.Params != inst.original.Params {
+					kv["params"] = inst.Params
+				}
+			case "trigger_user_id":
+				if inst.TriggerUserId != inst.original.TriggerUserId {
+					kv["trigger_user_id"] = inst.TriggerUserId
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -198,15 +258,37 @@ type JournalPlain struct {
 	CreatedAt     time.Time
 }
 
-func (w JournalPlain) ToJournal() Journal {
-	return Journal{
+func (w JournalPlain) ToJournal(allows ...string) Journal {
+	if len(allows) == 0 {
+		return Journal{
 
-		Id:            null.IntFrom(int64(w.Id)),
-		Action:        null.StringFrom(w.Action),
-		Params:        null.StringFrom(w.Params),
-		TriggerUserId: null.IntFrom(int64(w.TriggerUserId)),
-		CreatedAt:     null.TimeFrom(w.CreatedAt),
+			Id:            null.IntFrom(int64(w.Id)),
+			Action:        null.StringFrom(w.Action),
+			Params:        null.StringFrom(w.Params),
+			TriggerUserId: null.IntFrom(int64(w.TriggerUserId)),
+			CreatedAt:     null.TimeFrom(w.CreatedAt),
+		}
 	}
+
+	res := Journal{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "action":
+			res.Action = null.StringFrom(w.Action)
+		case "params":
+			res.Params = null.StringFrom(w.Params)
+		case "trigger_user_id":
+			res.TriggerUserId = null.IntFrom(int64(w.TriggerUserId))
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -238,6 +320,25 @@ type JournalModel struct {
 }
 
 var journalTableName = "journal"
+
+const (
+	JournalFieldId            = "id"
+	JournalFieldAction        = "action"
+	JournalFieldParams        = "params"
+	JournalFieldTriggerUserId = "trigger_user_id"
+	JournalFieldCreatedAt     = "created_at"
+)
+
+// JournalFields return all fields in Journal model
+func JournalFields() []string {
+	return []string{
+		"id",
+		"action",
+		"params",
+		"trigger_user_id",
+		"created_at",
+	}
+}
 
 func SetJournalTable(tableName string) {
 	journalTableName = tableName
@@ -486,18 +587,18 @@ func (m *JournalModel) SaveAll(journals []Journal) ([]int64, error) {
 }
 
 // Save save a journal to database
-func (m *JournalModel) Save(journal Journal) (int64, error) {
-	return m.Create(journal.StaledKV())
+func (m *JournalModel) Save(journal Journal, onlyFields ...string) (int64, error) {
+	return m.Create(journal.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new journal or update it when it has a id > 0
-func (m *JournalModel) SaveOrUpdate(journal Journal) (id int64, updated bool, err error) {
+func (m *JournalModel) SaveOrUpdate(journal Journal, onlyFields ...string) (id int64, updated bool, err error) {
 	if journal.Id.Int64 > 0 {
-		_, _err := m.UpdateById(journal.Id.Int64, journal)
+		_, _err := m.UpdateById(journal.Id.Int64, journal, onlyFields...)
 		return journal.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(journal)
+	_id, _err := m.Save(journal, onlyFields...)
 	return _id, false, _err
 }
 
@@ -524,9 +625,14 @@ func (m *JournalModel) Update(journal Journal, builders ...query.SQLBuilder) (in
 	return m.UpdateFields(journal.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *JournalModel) UpdatePart(journal Journal, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(journal.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *JournalModel) UpdateById(id int64, journal Journal) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(journal)
+func (m *JournalModel) UpdateById(id int64, journal Journal, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(journal.StaledKV(onlyFields...))
 }
 
 // Delete remove a model

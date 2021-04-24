@@ -21,7 +21,7 @@ models:
     - name: subject_type
       type: string
     - name: status
-      type: string
+      type: int8
     - name: share_user
       type: string
     - name: create_user_id

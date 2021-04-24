@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -51,7 +52,7 @@ func main() {
 		Name:   "db_conn_str",
 		Usage:  "数据库连接字符串",
 		EnvVar: "TECH_SHARE_DB_CONN",
-		Value:  "mylxsw:OpenHardware42!!@tcp(192.168.10.19:3306)/tech_share?parseTime=true",
+		Value:  "root:@tcp(127.0.0.1:3306)/tech_share?parseTime=true",
 	}))
 	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
 		Name:   "storage_path",
@@ -62,7 +63,7 @@ func main() {
 
 	app.BeforeServerStart(func(cc container.Container) error {
 		stackWriter := writer.NewStackWriter()
-		cc.MustResolve(func(c infra.FlagContext) {
+		cc.MustResolve(func(ctx context.Context, c infra.FlagContext) {
 			if !c.Bool("debug") {
 				log.All().LogLevel(level.Info)
 			}
@@ -74,7 +75,7 @@ func main() {
 			}
 
 			log.All().LogFormatter(formatter.NewJSONWithTimeFormatter())
-			stackWriter.PushWithLevels(writer.NewDefaultRotatingFileWriter(func(le level.Level, module string) string {
+			stackWriter.PushWithLevels(writer.NewDefaultRotatingFileWriter(ctx, func(le level.Level, module string) string {
 				return filepath.Join(logPath, fmt.Sprintf("%s-%s.log", time.Now().Format("20060102"), le.GetLevelName()))
 			}))
 		})

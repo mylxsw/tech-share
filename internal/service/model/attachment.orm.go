@@ -27,7 +27,6 @@ type Attachment struct {
 	AttaType  null.String
 	AttaPath  null.String
 	CreatedAt null.Time
-	UpdatedAt null.Time
 }
 
 // As convert object to other type
@@ -49,68 +48,129 @@ type attachmentOriginal struct {
 	AttaType  null.String
 	AttaPath  null.String
 	CreatedAt null.Time
-	UpdatedAt null.Time
 }
 
 // Staled identify whether the object has been modified
-func (inst *Attachment) Staled() bool {
+func (inst *Attachment) Staled(onlyFields ...string) bool {
 	if inst.original == nil {
 		inst.original = &attachmentOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		return true
-	}
-	if inst.ShareId != inst.original.ShareId {
-		return true
-	}
-	if inst.Name != inst.original.Name {
-		return true
-	}
-	if inst.AttaType != inst.original.AttaType {
-		return true
-	}
-	if inst.AttaPath != inst.original.AttaPath {
-		return true
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		return true
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		return true
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			return true
+		}
+		if inst.ShareId != inst.original.ShareId {
+			return true
+		}
+		if inst.Name != inst.original.Name {
+			return true
+		}
+		if inst.AttaType != inst.original.AttaType {
+			return true
+		}
+		if inst.AttaPath != inst.original.AttaPath {
+			return true
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			return true
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					return true
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					return true
+				}
+			case "name":
+				if inst.Name != inst.original.Name {
+					return true
+				}
+			case "atta_type":
+				if inst.AttaType != inst.original.AttaType {
+					return true
+				}
+			case "atta_path":
+				if inst.AttaPath != inst.original.AttaPath {
+					return true
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					return true
+				}
+			default:
+			}
+		}
 	}
 
 	return false
 }
 
 // StaledKV return all fields has been modified
-func (inst *Attachment) StaledKV() query.KV {
+func (inst *Attachment) StaledKV(onlyFields ...string) query.KV {
 	kv := make(query.KV, 0)
 
 	if inst.original == nil {
 		inst.original = &attachmentOriginal{}
 	}
 
-	if inst.Id != inst.original.Id {
-		kv["id"] = inst.Id
-	}
-	if inst.ShareId != inst.original.ShareId {
-		kv["share_id"] = inst.ShareId
-	}
-	if inst.Name != inst.original.Name {
-		kv["name"] = inst.Name
-	}
-	if inst.AttaType != inst.original.AttaType {
-		kv["atta_type"] = inst.AttaType
-	}
-	if inst.AttaPath != inst.original.AttaPath {
-		kv["atta_path"] = inst.AttaPath
-	}
-	if inst.CreatedAt != inst.original.CreatedAt {
-		kv["created_at"] = inst.CreatedAt
-	}
-	if inst.UpdatedAt != inst.original.UpdatedAt {
-		kv["updated_at"] = inst.UpdatedAt
+	if len(onlyFields) == 0 {
+
+		if inst.Id != inst.original.Id {
+			kv["id"] = inst.Id
+		}
+		if inst.ShareId != inst.original.ShareId {
+			kv["share_id"] = inst.ShareId
+		}
+		if inst.Name != inst.original.Name {
+			kv["name"] = inst.Name
+		}
+		if inst.AttaType != inst.original.AttaType {
+			kv["atta_type"] = inst.AttaType
+		}
+		if inst.AttaPath != inst.original.AttaPath {
+			kv["atta_path"] = inst.AttaPath
+		}
+		if inst.CreatedAt != inst.original.CreatedAt {
+			kv["created_at"] = inst.CreatedAt
+		}
+	} else {
+		for _, f := range onlyFields {
+			switch strcase.ToSnake(f) {
+
+			case "id":
+				if inst.Id != inst.original.Id {
+					kv["id"] = inst.Id
+				}
+			case "share_id":
+				if inst.ShareId != inst.original.ShareId {
+					kv["share_id"] = inst.ShareId
+				}
+			case "name":
+				if inst.Name != inst.original.Name {
+					kv["name"] = inst.Name
+				}
+			case "atta_type":
+				if inst.AttaType != inst.original.AttaType {
+					kv["atta_type"] = inst.AttaType
+				}
+			case "atta_path":
+				if inst.AttaPath != inst.original.AttaPath {
+					kv["atta_path"] = inst.AttaPath
+				}
+			case "created_at":
+				if inst.CreatedAt != inst.original.CreatedAt {
+					kv["created_at"] = inst.CreatedAt
+				}
+			default:
+			}
+		}
 	}
 
 	return kv
@@ -263,20 +323,42 @@ type AttachmentPlain struct {
 	AttaType  string
 	AttaPath  string
 	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
-func (w AttachmentPlain) ToAttachment() Attachment {
-	return Attachment{
+func (w AttachmentPlain) ToAttachment(allows ...string) Attachment {
+	if len(allows) == 0 {
+		return Attachment{
 
-		Id:        null.IntFrom(int64(w.Id)),
-		ShareId:   null.IntFrom(int64(w.ShareId)),
-		Name:      null.StringFrom(w.Name),
-		AttaType:  null.StringFrom(w.AttaType),
-		AttaPath:  null.StringFrom(w.AttaPath),
-		CreatedAt: null.TimeFrom(w.CreatedAt),
-		UpdatedAt: null.TimeFrom(w.UpdatedAt),
+			Id:        null.IntFrom(int64(w.Id)),
+			ShareId:   null.IntFrom(int64(w.ShareId)),
+			Name:      null.StringFrom(w.Name),
+			AttaType:  null.StringFrom(w.AttaType),
+			AttaPath:  null.StringFrom(w.AttaPath),
+			CreatedAt: null.TimeFrom(w.CreatedAt),
+		}
 	}
+
+	res := Attachment{}
+	for _, al := range allows {
+		switch strcase.ToSnake(al) {
+
+		case "id":
+			res.Id = null.IntFrom(int64(w.Id))
+		case "share_id":
+			res.ShareId = null.IntFrom(int64(w.ShareId))
+		case "name":
+			res.Name = null.StringFrom(w.Name)
+		case "atta_type":
+			res.AttaType = null.StringFrom(w.AttaType)
+		case "atta_path":
+			res.AttaPath = null.StringFrom(w.AttaPath)
+		case "created_at":
+			res.CreatedAt = null.TimeFrom(w.CreatedAt)
+		default:
+		}
+	}
+
+	return res
 }
 
 // As convert object to other type
@@ -294,7 +376,6 @@ func (w *Attachment) ToAttachmentPlain() AttachmentPlain {
 		AttaType:  w.AttaType.String,
 		AttaPath:  w.AttaPath.String,
 		CreatedAt: w.CreatedAt.Time,
-		UpdatedAt: w.UpdatedAt.Time,
 	}
 }
 
@@ -310,6 +391,27 @@ type AttachmentModel struct {
 }
 
 var attachmentTableName = "attachment"
+
+const (
+	AttachmentFieldId        = "id"
+	AttachmentFieldShareId   = "share_id"
+	AttachmentFieldName      = "name"
+	AttachmentFieldAttaType  = "atta_type"
+	AttachmentFieldAttaPath  = "atta_path"
+	AttachmentFieldCreatedAt = "created_at"
+)
+
+// AttachmentFields return all fields in Attachment model
+func AttachmentFields() []string {
+	return []string{
+		"id",
+		"share_id",
+		"name",
+		"atta_type",
+		"atta_path",
+		"created_at",
+	}
+}
 
 func SetAttachmentTable(tableName string) {
 	attachmentTableName = tableName
@@ -444,7 +546,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 			"atta_type",
 			"atta_path",
 			"created_at",
-			"updated_at",
 		)
 	}
 
@@ -465,8 +566,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 		case "atta_path":
 			selectFields = append(selectFields, f)
 		case "created_at":
-			selectFields = append(selectFields, f)
-		case "updated_at":
 			selectFields = append(selectFields, f)
 		}
 	}
@@ -490,8 +589,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 				scanFields = append(scanFields, &attachmentVar.AttaPath)
 			case "created_at":
 				scanFields = append(scanFields, &attachmentVar.CreatedAt)
-			case "updated_at":
-				scanFields = append(scanFields, &attachmentVar.UpdatedAt)
 			}
 		}
 
@@ -542,10 +639,6 @@ func (m *AttachmentModel) Create(kv query.KV) (int64, error) {
 		kv["created_at"] = time.Now()
 	}
 
-	if _, ok := kv["updated_at"]; !ok {
-		kv["updated_at"] = time.Now()
-	}
-
 	sqlStr, params := m.query.Table(m.tableName).ResolveInsert(kv)
 
 	res, err := m.db.ExecContext(context.Background(), sqlStr, params...)
@@ -572,18 +665,18 @@ func (m *AttachmentModel) SaveAll(attachments []Attachment) ([]int64, error) {
 }
 
 // Save save a attachment to database
-func (m *AttachmentModel) Save(attachment Attachment) (int64, error) {
-	return m.Create(attachment.StaledKV())
+func (m *AttachmentModel) Save(attachment Attachment, onlyFields ...string) (int64, error) {
+	return m.Create(attachment.StaledKV(onlyFields...))
 }
 
 // SaveOrUpdate save a new attachment or update it when it has a id > 0
-func (m *AttachmentModel) SaveOrUpdate(attachment Attachment) (id int64, updated bool, err error) {
+func (m *AttachmentModel) SaveOrUpdate(attachment Attachment, onlyFields ...string) (id int64, updated bool, err error) {
 	if attachment.Id.Int64 > 0 {
-		_, _err := m.UpdateById(attachment.Id.Int64, attachment)
+		_, _err := m.UpdateById(attachment.Id.Int64, attachment, onlyFields...)
 		return attachment.Id.Int64, true, _err
 	}
 
-	_id, _err := m.Save(attachment)
+	_id, _err := m.Save(attachment, onlyFields...)
 	return _id, false, _err
 }
 
@@ -592,8 +685,6 @@ func (m *AttachmentModel) UpdateFields(kv query.KV, builders ...query.SQLBuilder
 	if len(kv) == 0 {
 		return 0, nil
 	}
-
-	kv["updated_at"] = time.Now()
 
 	sqlStr, params := m.query.Merge(builders...).AppendCondition(m.applyScope()).
 		Table(m.tableName).
@@ -612,9 +703,14 @@ func (m *AttachmentModel) Update(attachment Attachment, builders ...query.SQLBui
 	return m.UpdateFields(attachment.StaledKV(), builders...)
 }
 
+// UpdatePart update a model for given query
+func (m *AttachmentModel) UpdatePart(attachment Attachment, onlyFields ...string) (int64, error) {
+	return m.UpdateFields(attachment.StaledKV(onlyFields...))
+}
+
 // UpdateById update a model by id
-func (m *AttachmentModel) UpdateById(id int64, attachment Attachment) (int64, error) {
-	return m.Condition(query.Builder().Where("id", "=", id)).Update(attachment)
+func (m *AttachmentModel) UpdateById(id int64, attachment Attachment, onlyFields ...string) (int64, error) {
+	return m.Condition(query.Builder().Where("id", "=", id)).UpdateFields(attachment.StaledKV(onlyFields...))
 }
 
 // Delete remove a model
