@@ -209,12 +209,12 @@ func (inst *SharePlan) StaledKV(onlyFields ...string) query.KV {
 }
 
 // Save create a new model or update it
-func (inst *SharePlan) Save() error {
+func (inst *SharePlan) Save(onlyFields ...string) error {
 	if inst.sharePlanModel == nil {
 		return query.ErrModelNotSet
 	}
 
-	id, _, err := inst.sharePlanModel.SaveOrUpdate(*inst)
+	id, _, err := inst.sharePlanModel.SaveOrUpdate(*inst, onlyFields...)
 	if err != nil {
 		return err
 	}
@@ -666,6 +666,9 @@ func (m *SharePlanModel) Get(builders ...query.SQLBuilder) ([]SharePlan, error) 
 		if err := rows.Scan(scanFields...); err != nil {
 			return nil, err
 		}
+
+		sharePlanReal.original = &sharePlanOriginal{}
+		_ = coll.CopyProperties(sharePlanReal, sharePlanReal.original)
 
 		sharePlanReal.SetModel(m)
 		sharePlans = append(sharePlans, *sharePlanReal)

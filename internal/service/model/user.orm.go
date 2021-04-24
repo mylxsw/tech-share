@@ -161,12 +161,12 @@ func (inst *User) StaledKV(onlyFields ...string) query.KV {
 }
 
 // Save create a new model or update it
-func (inst *User) Save() error {
+func (inst *User) Save(onlyFields ...string) error {
 	if inst.userModel == nil {
 		return query.ErrModelNotSet
 	}
 
-	id, _, err := inst.userModel.SaveOrUpdate(*inst)
+	id, _, err := inst.userModel.SaveOrUpdate(*inst, onlyFields...)
 	if err != nil {
 		return err
 	}
@@ -532,6 +532,9 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 		if err := rows.Scan(scanFields...); err != nil {
 			return nil, err
 		}
+
+		userReal.original = &userOriginal{}
+		_ = coll.CopyProperties(userReal, userReal.original)
 
 		userReal.SetModel(m)
 		users = append(users, *userReal)

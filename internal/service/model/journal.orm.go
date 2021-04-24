@@ -161,12 +161,12 @@ func (inst *Journal) StaledKV(onlyFields ...string) query.KV {
 }
 
 // Save create a new model or update it
-func (inst *Journal) Save() error {
+func (inst *Journal) Save(onlyFields ...string) error {
 	if inst.journalModel == nil {
 		return query.ErrModelNotSet
 	}
 
-	id, _, err := inst.journalModel.SaveOrUpdate(*inst)
+	id, _, err := inst.journalModel.SaveOrUpdate(*inst, onlyFields...)
 	if err != nil {
 		return err
 	}
@@ -532,6 +532,9 @@ func (m *JournalModel) Get(builders ...query.SQLBuilder) ([]Journal, error) {
 		if err := rows.Scan(scanFields...); err != nil {
 			return nil, err
 		}
+
+		journalReal.original = &journalOriginal{}
+		_ = coll.CopyProperties(journalReal, journalReal.original)
 
 		journalReal.SetModel(m)
 		journals = append(journals, *journalReal)

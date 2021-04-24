@@ -161,12 +161,12 @@ func (inst *ShareUserRel) StaledKV(onlyFields ...string) query.KV {
 }
 
 // Save create a new model or update it
-func (inst *ShareUserRel) Save() error {
+func (inst *ShareUserRel) Save(onlyFields ...string) error {
 	if inst.shareUserRelModel == nil {
 		return query.ErrModelNotSet
 	}
 
-	id, _, err := inst.shareUserRelModel.SaveOrUpdate(*inst)
+	id, _, err := inst.shareUserRelModel.SaveOrUpdate(*inst, onlyFields...)
 	if err != nil {
 		return err
 	}
@@ -582,6 +582,9 @@ func (m *ShareUserRelModel) Get(builders ...query.SQLBuilder) ([]ShareUserRel, e
 		if err := rows.Scan(scanFields...); err != nil {
 			return nil, err
 		}
+
+		shareUserRelReal.original = &shareUserRelOriginal{}
+		_ = coll.CopyProperties(shareUserRelReal, shareUserRelReal.original)
 
 		shareUserRelReal.SetModel(m)
 		shareUserRels = append(shareUserRels, *shareUserRelReal)

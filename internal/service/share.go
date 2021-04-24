@@ -222,10 +222,17 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 			return err
 		}
 
+		// onlyFields only update this fields
+		onlyFields := []string{
+			model.SharePlanFieldShareAt,
+			model.SharePlanFieldPlanDuration,
+			model.SharePlanFieldNote,
+		}
+
 		// create or update plan
 		var planPlain model.SharePlanPlain
 		_ = copier.Copy(&planPlain, plan)
-		sp := planPlain.ToSharePlan(model.SharePlanFieldShareAt, model.SharePlanFieldPlanDuration, model.SharePlanFieldNote)
+		sp := planPlain.ToSharePlan(onlyFields...)
 
 		planExi, err := share.SharePlan().First()
 		if err != nil {
@@ -246,8 +253,10 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 		planExi.PlanDuration = sp.PlanDuration
 		planExi.Note = sp.Note
 
+		fmt.Println(planExi.StaledKV(onlyFields...))
+
 		planID = planExi.Id.ValueOrZero()
-		return planExi.Save()
+		return planExi.Save(onlyFields...)
 	})
 
 	return planID, err

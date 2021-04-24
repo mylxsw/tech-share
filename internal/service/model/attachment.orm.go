@@ -177,12 +177,12 @@ func (inst *Attachment) StaledKV(onlyFields ...string) query.KV {
 }
 
 // Save create a new model or update it
-func (inst *Attachment) Save() error {
+func (inst *Attachment) Save(onlyFields ...string) error {
 	if inst.attachmentModel == nil {
 		return query.ErrModelNotSet
 	}
 
-	id, _, err := inst.attachmentModel.SaveOrUpdate(*inst)
+	id, _, err := inst.attachmentModel.SaveOrUpdate(*inst, onlyFields...)
 	if err != nil {
 		return err
 	}
@@ -610,6 +610,9 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 		if err := rows.Scan(scanFields...); err != nil {
 			return nil, err
 		}
+
+		attachmentReal.original = &attachmentOriginal{}
+		_ = coll.CopyProperties(attachmentReal, attachmentReal.original)
 
 		attachmentReal.SetModel(m)
 		attachments = append(attachments, *attachmentReal)
