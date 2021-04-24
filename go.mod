@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/buger/jsonparser v1.0.0 // indirect
+	github.com/go-playground/universal-translator v0.17.0 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/mux v1.8.0
@@ -12,6 +14,7 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
 	github.com/jinzhu/copier v0.3.0 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mylxsw/asteria v0.0.0-20210423061904-9b17f4c87f96
 	github.com/mylxsw/coll v0.0.0-20210423142615-0a2e3d0afc0e
 	github.com/mylxsw/container v0.0.0-20210320032614-4c230b312e04

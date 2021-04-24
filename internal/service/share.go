@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/jinzhu/copier"
 	"github.com/mylxsw/coll"
 	"github.com/mylxsw/eloquent"
@@ -14,6 +15,8 @@ import (
 	"github.com/mylxsw/tech-share/internal/service/model"
 	"gopkg.in/guregu/null.v3"
 )
+
+var validate = validator.New()
 
 const (
 	ShareStatusVoting   int8 = 0
@@ -39,6 +42,8 @@ type ShareService interface {
 	GetSharesForUser(ctx context.Context, userID int64, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
 	// GetSharesPlaned return all shares has been planed
 	GetSharesPlaned(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
+	// ShareFinish set a share as finished status
+	ShareFinish(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error)
 
 	// UpdateShare update a share
 	UpdateShare(ctx context.Context, id int64, share Share) error
@@ -130,34 +135,91 @@ type Attachment struct {
 type Plan struct {
 	PlanUpdateFields
 	Id           int64     `json:"id"`
-	RealDuration int64     `json:"real_duration"`
+	RealDuration int64     `json:"real_duration" validate:"gte=0"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type PlanUpdateFields struct {
-	ShareAt      time.Time `json:"share_at"`
-	PlanDuration int64     `json:"plan_duration"`
+	ShareAt      time.Time `json:"share_at" validate:"required"`
+	PlanDuration int64     `json:"plan_duration" validate:"required,gt=0"`
 	Note         string    `json:"note"`
 }
 
 type Share struct {
 	ShareUpdateFields
 	Id           int64     `json:"id"`
-	Status       int8      `json:"status"`
+	Status       int8      `json:"status" validate:"oneof=0 1 2"`
 	Note         string    `json:"note"`
-	LikeCount    int64     `json:"like_count"`
-	JoinCount    int64     `json:"join_count"`
+	LikeCount    int64     `json:"like_count" validate:"gte=0"`
+	JoinCount    int64     `json:"join_count" validate:"gte=0"`
 	CreateUserID int64     `json:"create_user_id"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type ShareUpdateFields struct {
-	Subject     string `json:"subject"`
-	SubjectType string `json:"subject_type"`
+	Subject     string `json:"subject" validate:"required,gte=2"`
+	SubjectType string `json:"subject_type" validate:"required"`
 	Description string `json:"description"`
 	ShareUser   string `json:"share_user"`
+}
+
+type ShareFinishFields struct {
+	RealDuration int64   `json:"real_duration" validate:"required,gte=0"`
+	Attachments  []int64 `json:"attachments"`
+	Note         string  `json:"note"`
+}
+
+func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error) {
+	ok := false
+	if err := validate.Struct(sf); err != nil {
+		return ok, err
+	}
+
+	err := eloquent.Transaction(p.db, func(tx query.Database) error {
+		share, err := model.NewShareModel(tx).First(query.Builder().Where("id", shareID))
+		if err != nil {
+			return err
+		}
+
+		if int8(share.Status.ValueOrZero()) == ShareStatusVoting {
+			return fmt.Errorf("the share can not be finished, you need create a plan first")
+		}
+
+		if int8(share.Status.ValueOrZero()) == ShareStatusFinished {
+			return nil
+		}
+
+		share.Status = null.IntFrom(int64(ShareStatusFinished))
+		if err := share.Save(model.ShareFieldStatus); err != nil {
+			return err
+		}
+
+		plan, err := share.SharePlan().First()
+		if err != nil {
+			return err
+		}
+
+		plan.RealDuration = null.IntFrom(sf.RealDuration)
+		plan.Note = null.StringFrom(fmt.Sprintf("%s\n%s", plan.Note.ValueOrZero(), sf.Note))
+		if err := plan.Save(model.SharePlanFieldRealDuration, model.SharePlanFieldNote); err != nil {
+			return err
+		}
+
+		if len(sf.Attachments) > 0 {
+			var attaIDs []interface{}
+			_ = coll.Map(sf.Attachments, &attaIDs, func(attaID int64) interface{} { return attaID })
+			if _, err := model.NewAttachmentModel(tx).UpdateFields(query.KV{"share_id": shareID}, query.Builder().WhereIn("id", attaIDs...)); err != nil {
+				return err
+			}
+		}
+
+		ok = true
+		return nil
+	})
+
+	return ok, err
 }
 
 func (p shareService) GetShares(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
@@ -190,20 +252,45 @@ func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, 
 }
 
 func (p shareService) CreateShare(ctx context.Context, share Share) (int64, error) {
-	return model.NewShareModel(p.db).Create(query.KV{
-		"subject":        share.Subject,
-		"subject_type":   share.SubjectType,
-		"description":    share.Description,
-		"share_user":     share.ShareUser,
-		"create_user_id": share.CreateUserID,
-		"like_count":     share.LikeCount,
-		"join_count":     share.JoinCount,
-		"status":         share.Status,
+	var shareID int64
+	if err := validate.Struct(share); err != nil {
+		return shareID, err
+	}
+
+	err := eloquent.Transaction(p.db, func(tx query.Database) error {
+		exist, err := model.NewShareModel(tx).Exists(query.Builder().Where("subject", share.Subject))
+		if err != nil && err != query.ErrNoResult {
+			return err
+		}
+
+		if exist {
+			return fmt.Errorf("the subject already existed")
+		}
+
+		shareID, err = model.NewShareModel(tx).Create(query.KV{
+			"subject":        share.Subject,
+			"subject_type":   share.SubjectType,
+			"description":    share.Description,
+			"share_user":     share.ShareUser,
+			"create_user_id": share.CreateUserID,
+			"like_count":     share.LikeCount,
+			"join_count":     share.JoinCount,
+			"status":         share.Status,
+		})
+
+		return err
 	})
+
+	return shareID, err
 }
 
 func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, plan PlanUpdateFields) (int64, error) {
 	var planID int64
+
+	if err := validate.Struct(plan); err != nil {
+		return planID, err
+	}
+
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
 		// query share
 		share, err := model.NewShareModel(tx).First(query.Builder().Where("id", shareID))

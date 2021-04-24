@@ -33,9 +33,9 @@ func (ctl ShareController) Register(router web.Router) {
 		router.Post("/{id}/join/", ctl.JoinShare)
 		router.Delete("/{id}/join/", ctl.LeaveShare)
 
-		router.Post("/{id}/plan/", ctl.CreateSharePlan)
+		router.Post("/{id}/plan/", ctl.CreateOrUpdateSharePlan)
+		router.Put("/{id}/plan/", ctl.CreateOrUpdateSharePlan)
 		router.Delete("/{id}/plan/", ctl.CancelSharePlan)
-		router.Put("/{id}/plan/", ctl.UpdateSharePlan)
 
 		router.Post("/{id}/finish/", ctl.FinishShare)
 	})
@@ -154,8 +154,8 @@ func (ctl ShareController) LeaveShare(ctx web.Context, req web.Request, shareSrv
 	return err
 }
 
-// CreateSharePlan create a share plan
-func (ctl ShareController) CreateSharePlan(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
+// CreateOrUpdateSharePlan create or update a share plan
+func (ctl ShareController) CreateOrUpdateSharePlan(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
 	id, err := strconv.Atoi(req.PathVar("id"))
 	if err != nil {
 		return err
@@ -181,14 +181,18 @@ func (ctl ShareController) CancelSharePlan(ctx web.Context, req web.Request, sha
 	return err
 }
 
-// UpdateSharePlan update a share plan
-func (ctl ShareController) UpdateSharePlan(ctx web.Context, req web.Request) web.Response {
-	// TODO
-	return ctx.JSON(web.M{})
-}
-
 // FinishShare set a share as finished
-func (ctl ShareController) FinishShare(ctx web.Context, req web.Request) web.Response {
-	// TODO
-	return ctx.JSON(web.M{})
+func (ctl ShareController) FinishShare(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
+	id, err := strconv.Atoi(req.PathVar("id"))
+	if err != nil {
+		return err
+	}
+
+	var sf service.ShareFinishFields
+	if err := req.Unmarshal(&sf); err != nil {
+		return err
+	}
+
+	_, err = shareSrv.ShareFinish(context.TODO(), int64(id), sf)
+	return err
 }
