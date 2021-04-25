@@ -11,6 +11,7 @@ type Provider struct{}
 func (p Provider) Register(cc infra.Binder) {
 	cc.MustSingletonOverride(NewShareService)
 	cc.MustSingletonOverride(NewAttachmentService)
+	cc.MustSingletonOverride(NewUserService)
 }
 
 func (p Provider) Boot(cc infra.Resolver) {

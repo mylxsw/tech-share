@@ -14,6 +14,16 @@ type Config struct {
 	GitCommit   string `json:"git_commit"`
 	DBConnStr   string `json:"-"`
 	StoragePath string `json:"storage_path"`
+	LDAP        LDAP   `json:"ldap"`
+}
+
+type LDAP struct {
+	URL         string `json:"url"`
+	BaseDN      string `json:"base_dn"`
+	Username    string `json:"username"`
+	Password    string `json:"-"`
+	DisplayName string `json:"display_name"`
+	UID         string `json:"uid"`
 }
 
 func (conf *Config) Serialize() string {

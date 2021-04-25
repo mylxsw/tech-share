@@ -60,6 +60,28 @@ func main() {
 		EnvVar: "TECH_SHARE_STORAGE_PATH",
 		Value:  "/home/mylxsw/Downloads",
 	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "ldap_url",
+		Usage:  "LDAP 服务器地址",
+		EnvVar: "TECH_SHARE_LDAP_URL",
+		Value:  "ldap://127.0.0.1:389",
+	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "ldap_username",
+		Usage:  "LDAP 账号",
+		EnvVar: "TECH_SHARE_LDAP_USERNAME",
+	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "ldap_password",
+		Usage:  "LDAP 密码",
+		EnvVar: "TECH_SHARE_LDAP_PASSWORD",
+	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "ldap_base_dn",
+		Usage:  "LDAP base dn",
+		EnvVar: "TECH_SHARE_LDAP_BASE_DN",
+		Value:  "dc=example,dc=com",
+	}))
 
 	app.BeforeServerStart(func(cc container.Container) error {
 		stackWriter := writer.NewStackWriter()
@@ -100,6 +122,14 @@ func main() {
 			LogPath:     c.String("log_path"),
 			DBConnStr:   c.String("db_conn_str"),
 			StoragePath: c.String("storage_path"),
+			LDAP: config.LDAP{
+				URL:         c.String("ldap_url"),
+				BaseDN:      c.String("ldap_base_dn"),
+				Username:    c.String("ldap_username"),
+				Password:    c.String("ldap_password"),
+				DisplayName: "displayName",
+				UID:         "sAMAccountName",
+			},
 		}
 	})
 	app.Singleton(func(conf *config.Config) (*sql.DB, error) {
@@ -166,7 +196,7 @@ func main() {
 		})
 		m.Schema("202104222325").Create("attachment", func(builder *migrate.Builder) {
 			builder.Increments("id")
-			builder.Integer("share_id", false, true).Comment("分享id")
+			builder.Integer("share_id", false, true).Default(migrate.RawExpr("0")).Comment("分享id")
 			builder.String("name", 255).Nullable(true).Comment("附件名称")
 			builder.String("atta_type", 20).Nullable(true).Comment("附件类型")
 			builder.String("atta_path", 255).Nullable(true).Comment("附件地址")

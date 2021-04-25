@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/jinzhu/copier"
@@ -17,15 +16,6 @@ import (
 )
 
 var validate = validator.New()
-
-const (
-	ShareStatusVoting   int8 = 0
-	ShareStatusPlaned   int8 = 1
-	ShareStatusFinished int8 = 2
-
-	RelTypeLike int8 = 1
-	RelTypeJoin int8 = 2
-)
 
 type ShareService interface {
 	// GetShareByID get a share by id
@@ -65,7 +55,7 @@ type shareService struct {
 }
 
 func (p shareService) GetShareByID(ctx context.Context, id int64) (*ShareDetail, error) {
-	share, err := model.NewShareModel(p.db).First(query.Builder().Where("id", id))
+	share, err := model.NewShareModel(p.db).First(query.Builder().Where(model.ShareFieldId, id))
 	if err != nil {
 		return nil, err
 	}
@@ -110,67 +100,6 @@ func (p shareService) GetShareByID(ctx context.Context, id int64) (*ShareDetail,
 	return &res, nil
 }
 
-type ShareDetail struct {
-	Share       Share        `json:"share"`
-	Plan        *Plan        `json:"plan"`
-	Attachments []Attachment `json:"attachments"`
-	LikeUsers   []User       `json:"like_users"`
-	JoinUsers   []User       `json:"join_users"`
-}
-
-type User struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	relType int8
-}
-
-type Attachment struct {
-	Id        int64     `json:"id"`
-	Name      string    `json:"name"`
-	AttaType  string    `json:"atta_type"`
-	AttaPath  string    `json:"atta_path"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type Plan struct {
-	PlanUpdateFields
-	Id           int64     `json:"id"`
-	RealDuration int64     `json:"real_duration" validate:"gte=0"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
-type PlanUpdateFields struct {
-	ShareAt      time.Time `json:"share_at" validate:"required"`
-	PlanDuration int64     `json:"plan_duration" validate:"required,gt=0"`
-	Note         string    `json:"note"`
-}
-
-type Share struct {
-	ShareUpdateFields
-	Id           int64     `json:"id"`
-	Status       int8      `json:"status" validate:"oneof=0 1 2"`
-	Note         string    `json:"note"`
-	LikeCount    int64     `json:"like_count" validate:"gte=0"`
-	JoinCount    int64     `json:"join_count" validate:"gte=0"`
-	CreateUserID int64     `json:"create_user_id"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
-type ShareUpdateFields struct {
-	Subject     string `json:"subject" validate:"required,gte=2"`
-	SubjectType string `json:"subject_type" validate:"required"`
-	Description string `json:"description"`
-	ShareUser   string `json:"share_user"`
-}
-
-type ShareFinishFields struct {
-	RealDuration int64   `json:"real_duration" validate:"required,gte=0"`
-	Attachments  []int64 `json:"attachments"`
-	Note         string  `json:"note"`
-}
-
 func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error) {
 	ok := false
 	if err := validate.Struct(sf); err != nil {
@@ -178,7 +107,7 @@ func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFi
 	}
 
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
-		share, err := model.NewShareModel(tx).First(query.Builder().Where("id", shareID))
+		share, err := model.NewShareModel(tx).First(query.Builder().Where(model.ShareFieldId, shareID))
 		if err != nil {
 			return err
 		}
@@ -210,7 +139,10 @@ func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFi
 		if len(sf.Attachments) > 0 {
 			var attaIDs []interface{}
 			_ = coll.Map(sf.Attachments, &attaIDs, func(attaID int64) interface{} { return attaID })
-			if _, err := model.NewAttachmentModel(tx).UpdateFields(query.KV{"share_id": shareID}, query.Builder().WhereIn("id", attaIDs...)); err != nil {
+			if _, err := model.NewAttachmentModel(tx).UpdateFields(
+				query.KV{model.AttachmentFieldShareId: shareID},
+				query.Builder().WhereIn(model.AttachmentFieldId, attaIDs...).Where(model.AttachmentFieldShareId, 0),
+			); err != nil {
 				return err
 			}
 		}
@@ -223,18 +155,35 @@ func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFi
 }
 
 func (p shareService) GetShares(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(ctx, query.Builder().OrderBy("id", "desc"), page, perPage)
+	return p.getShares(ctx, query.Builder().OrderBy(model.ShareFieldId, "desc"), page, perPage)
 }
 
 func (p shareService) GetSharesForUser(ctx context.Context, userID int64, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(ctx, query.Builder().Where("create_user_id", userID).OrderBy("id", "desc"), page, perPage)
+	return p.getShares(
+		ctx,
+		query.Builder().Where(model.ShareFieldCreateUserId, userID).OrderBy(model.ShareFieldId, "desc"),
+		page,
+		perPage,
+	)
 }
 
 func (p shareService) GetSharesPlaned(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(ctx, query.Builder().Where("status", ShareStatusPlaned).OrderBy("id", "desc"), page, perPage)
+	return p.getShares(
+		ctx,
+		query.Builder().Where(model.ShareFieldStatus, ShareStatusPlaned).OrderBy(model.ShareFieldId, "desc"),
+		page,
+		perPage,
+	)
 }
 
 func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, perPage int64) ([]Share, query.PaginateMeta, error) {
+	if page <= 0 {
+		return nil, query.PaginateMeta{}, fmt.Errorf("invalid page")
+	}
+	if perPage <= 0 || perPage > 100 {
+		return nil, query.PaginateMeta{}, fmt.Errorf("invalid per_page, must be 1-100")
+	}
+
 	shares, meta, err := model.NewShareModel(p.db).Paginate(page, perPage, qb)
 	if err != nil {
 		return nil, meta, err
@@ -258,7 +207,7 @@ func (p shareService) CreateShare(ctx context.Context, share Share) (int64, erro
 	}
 
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
-		exist, err := model.NewShareModel(tx).Exists(query.Builder().Where("subject", share.Subject))
+		exist, err := model.NewShareModel(tx).Exists(query.Builder().Where(model.ShareFieldSubject, share.Subject))
 		if err != nil && err != query.ErrNoResult {
 			return err
 		}
@@ -267,15 +216,18 @@ func (p shareService) CreateShare(ctx context.Context, share Share) (int64, erro
 			return fmt.Errorf("the subject already existed")
 		}
 
+		var shareP model.SharePlain
+		_ = copier.Copy(&shareP, share)
+
 		shareID, err = model.NewShareModel(tx).Create(query.KV{
-			"subject":        share.Subject,
-			"subject_type":   share.SubjectType,
-			"description":    share.Description,
-			"share_user":     share.ShareUser,
-			"create_user_id": share.CreateUserID,
-			"like_count":     share.LikeCount,
-			"join_count":     share.JoinCount,
-			"status":         share.Status,
+			model.ShareFieldSubject:      share.Subject,
+			model.ShareFieldSubjectType:  share.SubjectType,
+			model.ShareFieldDescription:  share.Description,
+			model.ShareFieldShareUser:    share.ShareUser,
+			model.ShareFieldCreateUserId: share.CreateUserID,
+			model.ShareFieldLikeCount:    share.LikeCount,
+			model.ShareFieldJoinCount:    share.JoinCount,
+			model.ShareFieldStatus:       share.Status,
 		})
 
 		return err
@@ -293,7 +245,7 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
 		// query share
-		share, err := model.NewShareModel(tx).First(query.Builder().Where("id", shareID))
+		share, err := model.NewShareModel(tx).First(query.Builder().Where(model.ShareFieldId, shareID))
 		if err != nil {
 			return err
 		}
@@ -352,7 +304,7 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 func (p shareService) RemovePlan(ctx context.Context, shareID int64) (bool, error) {
 	var affected int64
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
-		share, err := model.NewShareModel(tx).First(query.Builder().Where("id", shareID))
+		share, err := model.NewShareModel(tx).First(query.Builder().Where(model.ShareFieldId, shareID))
 		if err != nil {
 			return err
 		}
@@ -366,7 +318,7 @@ func (p shareService) RemovePlan(ctx context.Context, shareID int64) (bool, erro
 			return err
 		}
 
-		affected, err = model.NewSharePlanModel(tx).Delete(query.Builder().Where("share_id", share.Id.ValueOrZero()))
+		affected, err = model.NewSharePlanModel(tx).Delete(query.Builder().Where(model.SharePlanFieldShareId, share.Id.ValueOrZero()))
 		return err
 	})
 
@@ -374,7 +326,7 @@ func (p shareService) RemovePlan(ctx context.Context, shareID int64) (bool, erro
 }
 
 func (p shareService) UpdateShare(ctx context.Context, id int64, share Share) error {
-	old, err := model.NewShareModel(p.db).First(query.Builder().Where("id", id))
+	old, err := model.NewShareModel(p.db).First(query.Builder().Where(model.ShareFieldId, id))
 	if err != nil {
 		return err
 	}
@@ -426,12 +378,14 @@ func (p shareService) JoinShare(ctx context.Context, id int64, userID int64, pos
 }
 
 func (p shareService) shareOpt(ctx context.Context, db query.Database, id int64, userID int64, relType int8, positive bool) (bool, error) {
-	share, err := model.NewShareModel(db).First(query.Builder().Where("id", id))
+	share, err := model.NewShareModel(db).First(query.Builder().Where(model.ShareFieldId, id))
 	if err != nil {
 		return false, err
 	}
 
-	rel, err := share.ShareUserRels().First(query.Builder().Where("user_id", userID).Where("rel_type", relType))
+	rel, err := share.ShareUserRels().First(query.Builder().
+		Where(model.ShareUserRelFieldUserId, userID).
+		Where(model.ShareUserRelFieldRelType, relType))
 	if err != nil && err != query.ErrNoResult {
 		return false, err
 	}
@@ -462,14 +416,16 @@ func (p shareService) shareOpt(ctx context.Context, db query.Database, id int64,
 	return false, nil
 }
 func (p shareService) updateShareRelTypeCount(ctx context.Context, db query.Database, id int64, relType int8) error {
-	relCount, err := model.NewShareUserRelModel(db).Count(query.Builder().Where("share_id", id).Where("rel_type", relType))
+	relCount, err := model.NewShareUserRelModel(db).Count(query.Builder().
+		Where(model.ShareUserRelFieldShareId, id).
+		Where(model.ShareUserRelFieldRelType, relType))
 	if err != nil {
 		return err
 	}
 
 	if _, err := model.NewShareModel(db).UpdateFields(
 		query.KV{relTypeToField(relType): relCount},
-		query.Builder().Where("id", id),
+		query.Builder().Where(model.ShareFieldId, id),
 	); err != nil {
 		return err
 	}
@@ -500,8 +456,8 @@ func (p shareService) RemoveShare(ctx context.Context, id int64) (bool, error) {
 
 func relTypeToField(relType int8) string {
 	if relType == RelTypeLike {
-		return "like_count"
+		return model.ShareFieldLikeCount
 	}
 
-	return "join_count"
+	return model.ShareFieldJoinCount
 }

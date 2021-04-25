@@ -4,10 +4,12 @@ go 1.16
 
 require (
 	github.com/buger/jsonparser v1.0.0 // indirect
+	github.com/go-ldap/ldap/v3 v3.3.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
@@ -21,7 +23,7 @@ require (
 	github.com/mylxsw/eloquent v0.0.0-20210424074519-a8d5b311ea34
 	github.com/mylxsw/glacier v0.0.0-20210423072905-64c3d4cfd51f
 	github.com/mylxsw/go-toolkit v0.0.0-20191208081907-50a06279f988
-	github.com/mylxsw/go-utils v0.0.0-20210307083839-f7ab4eeb1788
+	github.com/mylxsw/go-utils v0.0.0-20210425040828-4c967550cedf
 	github.com/mylxsw/redis-event-store v0.0.0-20210406090057-dc51381cdac2
 	github.com/prometheus/client_golang v1.8.0
 	github.com/robfig/cron/v3 v3.0.1 // indirect
