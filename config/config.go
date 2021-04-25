@@ -14,6 +14,7 @@ type Config struct {
 	GitCommit   string `json:"git_commit"`
 	DBConnStr   string `json:"-"`
 	StoragePath string `json:"storage_path"`
+	SessionKey  string `json:"-"`
 	LDAP        LDAP   `json:"ldap"`
 }
 

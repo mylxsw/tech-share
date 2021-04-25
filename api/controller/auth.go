@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/go-ldap/ldap/v3"
 	"github.com/google/uuid"
@@ -13,14 +12,14 @@ import (
 	"github.com/mylxsw/tech-share/internal/service"
 )
 
-// currentUserID extract current user id from request
-func currentUserID(req web.Request) int64 {
-	userID, err := strconv.Atoi(req.Header("mock-user-id"))
-	if err != nil {
-		return 101
+// currentUserID extract current user from request
+func currentUserID(req web.Request) service.UserInfo {
+	userLogin, ok := req.Session().Values["user_login"]
+	if !ok {
+		return service.UserInfo{}
 	}
 
-	return int64(userID)
+	return userLogin.(service.UserInfo)
 }
 
 type AuthController struct {
@@ -34,20 +33,28 @@ func NewAuthController(cc infra.Resolver, conf *config.Config) web.Controller {
 
 func (ctl AuthController) Register(router web.Router) {
 	router.Group("auth/", func(router web.Router) {
-		router.Post("login/", ctl.Login)
+		router.Post("login-ldap/", ctl.LdapLogin)
 	})
 }
 
-type LoginRes struct {
+type User struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
 	UUID string `json:"uuid"`
 }
 
-// Login let user login to the system
-func (ctl AuthController) Login(ctx web.Context, req web.Request, userSrv service.UserService) (*LoginRes, error) {
+// LdapLogin let user login to the system
+func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv service.UserService) (*User, error) {
 	username := req.Input("username")
 	password := req.Input("password")
+
+	if userLogin, ok := req.Session().Values["user_login"]; ok {
+		return nil, fmt.Errorf("you has been logon as %s", userLogin.(service.UserInfo).Name)
+	}
+
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("invalid username or password")
+	}
 
 	l, err := ldap.DialURL(ctl.conf.LDAP.URL)
 	if err != nil {
@@ -94,5 +101,6 @@ func (ctl AuthController) Login(ctx web.Context, req web.Request, userSrv servic
 		return nil, err
 	}
 
-	return &LoginRes{ID: user.Id, Name: user.Name, UUID: user.Uuid}, nil
+	req.Session().Values["user_login"] = *user
+	return &User{ID: user.Id, Name: user.Name, UUID: user.Uuid}, nil
 }

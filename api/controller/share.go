@@ -66,7 +66,7 @@ func (ctl ShareController) CreateShare(ctx web.Context, req web.Request, shareSr
 
 	_, err := shareSrv.CreateShare(context.TODO(), service.Share{
 		ShareUpdateFields: share,
-		CreateUserID:      currentUserID(req),
+		CreateUserID:      currentUserID(req).Id,
 	})
 	return err
 }
@@ -85,7 +85,7 @@ func (ctl ShareController) UpdateShare(ctx web.Context, req web.Request, shareSr
 
 	return shareSrv.UpdateShare(context.TODO(), int64(id), service.Share{
 		ShareUpdateFields: share,
-		CreateUserID:      currentUserID(req),
+		CreateUserID:      currentUserID(req).Id,
 	})
 }
 
@@ -117,7 +117,7 @@ func (ctl ShareController) LikeShare(ctx web.Context, req web.Request, shareSrv 
 		return err
 	}
 
-	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req), true)
+	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req).Id, true)
 	return err
 }
 
@@ -128,7 +128,7 @@ func (ctl ShareController) DislikeShare(ctx web.Context, req web.Request, shareS
 		return err
 	}
 
-	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req), false)
+	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req).Id, false)
 	return err
 }
 
@@ -139,7 +139,7 @@ func (ctl ShareController) JoinShare(ctx web.Context, req web.Request, shareSrv 
 		return err
 	}
 
-	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req), true)
+	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req).Id, true)
 	return err
 }
 
@@ -150,7 +150,7 @@ func (ctl ShareController) LeaveShare(ctx web.Context, req web.Request, shareSrv
 		return err
 	}
 
-	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req), false)
+	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req).Id, false)
 	return err
 }
 

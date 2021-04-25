@@ -82,6 +82,12 @@ func main() {
 		EnvVar: "TECH_SHARE_LDAP_BASE_DN",
 		Value:  "dc=example,dc=com",
 	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "session_key",
+		Usage:  "Session key",
+		EnvVar: "TECH_SHARE_SESSION_KEY",
+		Value:  "49a95f4cdaac9dedbc3298c5f5a7aa83",
+	}))
 
 	app.BeforeServerStart(func(cc container.Container) error {
 		stackWriter := writer.NewStackWriter()
@@ -122,6 +128,7 @@ func main() {
 			LogPath:     c.String("log_path"),
 			DBConnStr:   c.String("db_conn_str"),
 			StoragePath: c.String("storage_path"),
+			SessionKey:  c.String("session_key"),
 			LDAP: config.LDAP{
 				URL:         c.String("ldap_url"),
 				BaseDN:      c.String("ldap_base_dn"),

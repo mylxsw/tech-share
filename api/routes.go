@@ -8,11 +8,17 @@ import (
 	"github.com/mylxsw/tech-share/api/controller"
 )
 
-func controllers(cc container.Resolver, conf *config.Config) []web.Controller {
+func authedControllers(cc container.Resolver, conf *config.Config) []web.Controller {
 	return []web.Controller{
-		controller.NewInspectController(cc, conf),
 		controller.NewShareController(cc, conf),
-		controller.NewAuthController(cc, conf),
 		controller.NewUploadController(cc, conf),
+		controller.NewUserController(cc, conf),
+	}
+}
+
+func noAuthControllers(cc container.Resolver, conf *config.Config) []web.Controller {
+	return []web.Controller{
+		controller.NewAuthController(cc, conf),
+		controller.NewInspectController(cc, conf),
 	}
 }

@@ -1,17 +1,20 @@
 package api
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/eloquent/query"
 	"github.com/mylxsw/glacier/infra"
 	"github.com/mylxsw/glacier/listener"
 	"github.com/mylxsw/glacier/web"
+	"github.com/mylxsw/tech-share/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/mylxsw/tech-share/config"
@@ -63,11 +66,30 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 	conf := config.Get(cc)
 
 	mws := make([]web.HandlerDecorator, 0)
-	mws = append(mws, mw.AccessLog(log.Module("api")), mw.CORS("*"))
+	mws = append(mws,
+		mw.AccessLog(log.Module("api")),
+		mw.CORS("*"),
+		mw.Session(sessions.NewCookieStore([]byte(conf.SessionKey)), "tech-share", nil),
+	)
 
+	// 存储在 session 中的对象必须在这里注册，否则无法序列化
+	gob.Register(service.UserInfo{})
+
+	authMW := mw.BeforeInterceptor(func(ctx web.Context) web.Response {
+		_, ok := ctx.Session().Values["user_login"]
+		if !ok {
+			return ctx.JSONWithCode(web.M{"error": "access denied"}, http.StatusUnauthorized)
+		}
+
+		return nil
+	})
 	router.WithMiddleware(mws...).Controllers(
 		"/api",
-		controllers(cc, conf)...,
+		noAuthControllers(cc, conf)...,
+	)
+	router.WithMiddleware(append(mws, authMW)...).Controllers(
+		"/api",
+		authedControllers(cc, conf)...,
 	)
 }
 
