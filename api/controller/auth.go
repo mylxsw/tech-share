@@ -33,7 +33,8 @@ func NewAuthController(cc infra.Resolver, conf *config.Config) web.Controller {
 
 func (ctl AuthController) Register(router web.Router) {
 	router.Group("auth/", func(router web.Router) {
-		router.Post("login-ldap/", ctl.LdapLogin)
+		router.Post("/logout/", ctl.Logout).Name("auth:logout")
+		router.Post("/login-ldap/", ctl.LdapLogin).Name("auth:login-ldap")
 	})
 }
 
@@ -43,17 +44,22 @@ type User struct {
 	UUID string `json:"uuid"`
 }
 
+func (ctl AuthController) Logout(req web.Request) error {
+	delete(req.Session().Values, "user_login")
+	return nil
+}
+
 // LdapLogin let user login to the system
 func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv service.UserService) (*User, error) {
 	username := req.Input("username")
 	password := req.Input("password")
 
 	if userLogin, ok := req.Session().Values["user_login"]; ok {
-		return nil, fmt.Errorf("you has been logon as %s", userLogin.(service.UserInfo).Name)
+		return nil, service.NewValidateError(fmt.Errorf("you has been logon as %s", userLogin.(service.UserInfo).Name))
 	}
 
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("invalid username or password")
+		return nil, service.NewValidateError(fmt.Errorf("invalid username or password"))
 	}
 
 	l, err := ldap.DialURL(ctl.conf.LDAP.URL)
@@ -85,11 +91,11 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 	}
 
 	if len(sr.Entries) != 1 {
-		return nil, fmt.Errorf("user does not exist or too many entries returned")
+		return nil, service.NewValidateError(fmt.Errorf("user does not exist or too many entries returned"))
 	}
 
 	if err := l.Bind(sr.Entries[0].DN, password); err != nil {
-		return nil, err
+		return nil, service.NewValidateError(err)
 	}
 
 	user, err := userSrv.LoadUser(

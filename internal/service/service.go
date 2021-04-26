@@ -2,10 +2,22 @@ package service
 
 import "time"
 
+type ValidateError struct {
+	err error
+}
+
+func NewValidateError(err error) *ValidateError {
+	return &ValidateError{err: err}
+}
+
+func (v *ValidateError) Error() string {
+	return v.err.Error()
+}
+
 const (
-	ShareStatusVoting   int8 = 0
-	ShareStatusPlaned   int8 = 1
-	ShareStatusFinished int8 = 2
+	ShareStatusVoting   int8 = 1
+	ShareStatusPlaned   int8 = 2
+	ShareStatusFinished int8 = 3
 
 	RelTypeLike int8 = 1
 	RelTypeJoin int8 = 2
@@ -50,7 +62,7 @@ type PlanUpdateFields struct {
 type Share struct {
 	ShareUpdateFields
 	Id           int64     `json:"id"`
-	Status       int8      `json:"status" validate:"oneof=0 1 2"`
+	Status       int8      `json:"status" validate:"oneof=1 2 3"`
 	Note         string    `json:"note"`
 	LikeCount    int64     `json:"like_count" validate:"gte=0"`
 	JoinCount    int64     `json:"join_count" validate:"gte=0"`
@@ -70,4 +82,9 @@ type ShareFinishFields struct {
 	RealDuration int64   `json:"real_duration" validate:"required,gte=0"`
 	Attachments  []int64 `json:"attachments"`
 	Note         string  `json:"note"`
+}
+
+type ShareFilter struct {
+	Status  int8  `json:"status"`
+	Creator int64 `json:"creator"`
 }

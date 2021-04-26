@@ -22,31 +22,64 @@ func NewShareController(cc infra.Resolver, conf *config.Config) web.Controller {
 func (ctl ShareController) Register(router web.Router) {
 	router.Group("shares/", func(router web.Router) {
 		router.Get("/", ctl.Shares)
-		router.Get("/{id}/", ctl.Share)
+		router.Get("/my/", ctl.MyShares)
+		router.Get("/{id:[0-9]+}/", ctl.Share)
 		router.Post("/", ctl.CreateShare)
-		router.Post("/{id}/", ctl.UpdateShare)
-		router.Delete("/{id}/", ctl.DeleteShare)
+		router.Post("/{id:[0-9]+}/", ctl.UpdateShare)
+		router.Delete("/{id:[0-9]+}/", ctl.DeleteShare)
 
-		router.Post("/{id}/like/", ctl.LikeShare)
-		router.Delete("/{id}/like/", ctl.DislikeShare)
+		router.Post("/{id:[0-9]+}/like/", ctl.LikeShare)
+		router.Delete("/{id:[0-9]+}/like/", ctl.DislikeShare)
 
-		router.Post("/{id}/join/", ctl.JoinShare)
-		router.Delete("/{id}/join/", ctl.LeaveShare)
+		router.Post("/{id:[0-9]+}/join/", ctl.JoinShare)
+		router.Delete("/{id:[0-9]+}/join/", ctl.LeaveShare)
 
-		router.Post("/{id}/plan/", ctl.CreateOrUpdateSharePlan)
-		router.Put("/{id}/plan/", ctl.CreateOrUpdateSharePlan)
-		router.Delete("/{id}/plan/", ctl.CancelSharePlan)
+		router.Post("/{id:[0-9]+}/plan/", ctl.CreateOrUpdateSharePlan)
+		router.Put("/{id:[0-9]+}/plan/", ctl.CreateOrUpdateSharePlan)
+		router.Delete("/{id:[0-9]+}/plan/", ctl.CancelSharePlan)
 
-		router.Post("/{id}/finish/", ctl.FinishShare)
+		router.Post("/{id:[0-9]+}/finish/", ctl.FinishShare)
 	})
 }
 
 // Shares return all shares
+//   - status: 0 所有 1/2/3 基于状态筛选
+//   - creator: 基于创建人筛选 0 - 所有人
 func (ctl ShareController) Shares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
 	page := req.Int64Input("page", 1)
 	perPage := req.Int64Input("per_page", 20)
 
-	shares, meta, err := shareSrv.GetShares(context.TODO(), page, perPage)
+	status := req.Int64Input("status", 0)
+	creator := req.Int64Input("creator", 0)
+
+	filter := service.ShareFilter{
+		Status:  int8(status),
+		Creator: creator,
+	}
+	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, page, perPage)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginateRes{
+		Page: meta,
+		Data: shares,
+	}, nil
+}
+
+// MyShares return all shares for current user
+//   - status: 0 所有 1/2/3 基于状态筛选
+func (ctl ShareController) MyShares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
+	page := req.Int64Input("page", 1)
+	perPage := req.Int64Input("per_page", 20)
+
+	status := req.Int64Input("status", 0)
+
+	filter := service.ShareFilter{
+		Status:  int8(status),
+		Creator: currentUserID(req).Id,
+	}
+	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, page, perPage)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +116,7 @@ func (ctl ShareController) UpdateShare(ctx web.Context, req web.Request, shareSr
 		return err
 	}
 
-	return shareSrv.UpdateShare(context.TODO(), int64(id), service.Share{
-		ShareUpdateFields: share,
-		CreateUserID:      currentUserID(req).Id,
-	})
+	return shareSrv.UpdateShare(context.TODO(), int64(id), share)
 }
 
 // DeleteShare remove a share
@@ -193,6 +223,6 @@ func (ctl ShareController) FinishShare(ctx web.Context, req web.Request, shareSr
 		return err
 	}
 
-	_, err = shareSrv.ShareFinish(context.TODO(), int64(id), sf)
+	_, err = shareSrv.FinishShare(context.TODO(), int64(id), sf)
 	return err
 }

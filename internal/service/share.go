@@ -27,16 +27,12 @@ type ShareService interface {
 	// RemovePlan delete a plan for a share
 	RemovePlan(ctx context.Context, shareID int64) (bool, error)
 	// GetShares return all shares
-	GetShares(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
-	// GetSharesForUser return all shares for a user
-	GetSharesForUser(ctx context.Context, userID int64, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
-	// GetSharesPlaned return all shares has been planed
-	GetSharesPlaned(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
-	// ShareFinish set a share as finished status
-	ShareFinish(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error)
+	GetShares(ctx context.Context, filter ShareFilter, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
+	// FinishShare set a share as finished status
+	FinishShare(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error)
 
 	// UpdateShare update a share
-	UpdateShare(ctx context.Context, id int64, share Share) error
+	UpdateShare(ctx context.Context, id int64, share ShareUpdateFields) error
 	// RemoveShare delete a share
 	RemoveShare(ctx context.Context, id int64) (bool, error)
 	// LikeShare user like a share or cancel
@@ -100,12 +96,12 @@ func (p shareService) GetShareByID(ctx context.Context, id int64) (*ShareDetail,
 	return &res, nil
 }
 
-func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error) {
-	ok := false
+func (p shareService) FinishShare(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error) {
 	if err := validate.Struct(sf); err != nil {
-		return ok, err
+		return false, NewValidateError(err)
 	}
 
+	ok := false
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
 		share, err := model.NewShareModel(tx).First(query.Builder().Where(model.ShareFieldId, shareID))
 		if err != nil {
@@ -113,7 +109,7 @@ func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFi
 		}
 
 		if int8(share.Status.ValueOrZero()) == ShareStatusVoting {
-			return fmt.Errorf("the share can not be finished, you need create a plan first")
+			return NewValidateError(fmt.Errorf("the share can not be finished, you need create a plan first"))
 		}
 
 		if int8(share.Status.ValueOrZero()) == ShareStatusFinished {
@@ -154,26 +150,16 @@ func (p shareService) ShareFinish(ctx context.Context, shareID int64, sf ShareFi
 	return ok, err
 }
 
-func (p shareService) GetShares(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(ctx, query.Builder().OrderBy(model.ShareFieldId, "desc"), page, perPage)
-}
+func (p shareService) GetShares(ctx context.Context, filter ShareFilter, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
+	condition := query.Builder().OrderBy(model.ShareFieldId, "desc")
+	if filter.Creator > 0 {
+		condition = condition.Where(model.ShareFieldCreateUserId, filter.Creator)
+	}
+	if filter.Status > 0 {
+		condition = condition.Where(model.ShareFieldStatus, filter.Status)
+	}
 
-func (p shareService) GetSharesForUser(ctx context.Context, userID int64, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(
-		ctx,
-		query.Builder().Where(model.ShareFieldCreateUserId, userID).OrderBy(model.ShareFieldId, "desc"),
-		page,
-		perPage,
-	)
-}
-
-func (p shareService) GetSharesPlaned(ctx context.Context, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	return p.getShares(
-		ctx,
-		query.Builder().Where(model.ShareFieldStatus, ShareStatusPlaned).OrderBy(model.ShareFieldId, "desc"),
-		page,
-		perPage,
-	)
+	return p.getShares(ctx, condition, page, perPage)
 }
 
 func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, perPage int64) ([]Share, query.PaginateMeta, error) {
@@ -202,8 +188,9 @@ func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, 
 
 func (p shareService) CreateShare(ctx context.Context, share Share) (int64, error) {
 	var shareID int64
+	share.Status = ShareStatusVoting
 	if err := validate.Struct(share); err != nil {
-		return shareID, err
+		return shareID, NewValidateError(err)
 	}
 
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
@@ -213,7 +200,7 @@ func (p shareService) CreateShare(ctx context.Context, share Share) (int64, erro
 		}
 
 		if exist {
-			return fmt.Errorf("the subject already existed")
+			return NewValidateError(fmt.Errorf("the subject already existed"))
 		}
 
 		var shareP model.SharePlain
@@ -240,7 +227,7 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 	var planID int64
 
 	if err := validate.Struct(plan); err != nil {
-		return planID, err
+		return planID, NewValidateError(err)
 	}
 
 	err := eloquent.Transaction(p.db, func(tx query.Database) error {
@@ -325,7 +312,22 @@ func (p shareService) RemovePlan(ctx context.Context, shareID int64) (bool, erro
 	return affected > 0, err
 }
 
-func (p shareService) UpdateShare(ctx context.Context, id int64, share Share) error {
+func (p shareService) UpdateShare(ctx context.Context, id int64, share ShareUpdateFields) error {
+	if err := validate.Struct(share); err != nil {
+		return NewValidateError(err)
+	}
+
+	exist, err := model.NewShareModel(p.db).Exists(query.Builder().
+		Where("id", "!=", id).
+		Where(model.ShareFieldSubject, share.Subject))
+	if err != nil && err != query.ErrNoResult {
+		return err
+	}
+
+	if exist {
+		return NewValidateError(fmt.Errorf("the subject already existed"))
+	}
+
 	old, err := model.NewShareModel(p.db).First(query.Builder().Where(model.ShareFieldId, id))
 	if err != nil {
 		return err

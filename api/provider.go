@@ -14,6 +14,7 @@ import (
 	"github.com/mylxsw/glacier/infra"
 	"github.com/mylxsw/glacier/listener"
 	"github.com/mylxsw/glacier/web"
+	"github.com/mylxsw/go-utils/str"
 	"github.com/mylxsw/tech-share/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -44,7 +45,13 @@ func (s Provider) exceptionHandler(ctx web.Context, err interface{}) web.Respons
 				"error": fmt.Sprintf("%v", err2),
 			}, http.StatusNotFound)
 		}
+		if verr, ok := err2.(*service.ValidateError); ok {
+			return ctx.JSONWithCode(web.M{
+				"error": fmt.Sprintf("%v", verr),
+			}, http.StatusUnprocessableEntity)
+		}
 	}
+
 	log.Errorf("error: %v, call stack: %s", err, debug.Stack())
 	return ctx.JSONWithCode(web.M{
 		"error": fmt.Sprintf("%v", err),
@@ -76,6 +83,10 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 	gob.Register(service.UserInfo{})
 
 	authMW := mw.BeforeInterceptor(func(ctx web.Context) web.Response {
+		if str.HasPrefixes(ctx.CurrentRoute().GetName(), []string{"auth:", "inspect:"}) {
+			return nil
+		}
+
 		_, ok := ctx.Session().Values["user_login"]
 		if !ok {
 			return ctx.JSONWithCode(web.M{"error": "access denied"}, http.StatusUnauthorized)
@@ -83,10 +94,7 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 
 		return nil
 	})
-	router.WithMiddleware(mws...).Controllers(
-		"/api",
-		noAuthControllers(cc, conf)...,
-	)
+
 	router.WithMiddleware(append(mws, authMW)...).Controllers(
 		"/api",
 		authedControllers(cc, conf)...,

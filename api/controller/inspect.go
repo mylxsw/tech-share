@@ -18,7 +18,7 @@ func NewInspectController(cc infra.Resolver, conf *config.Config) web.Controller
 
 func (wel InspectController) Register(router web.Router) {
 	router.Group("/inspect", func(router web.Router) {
-		router.Any("/version", wel.Version)
+		router.Any("/version", wel.Version).Name("inspect:version")
 	})
 }
 
