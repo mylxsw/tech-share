@@ -52,7 +52,7 @@ func main() {
 		Name:   "db_conn_str",
 		Usage:  "数据库连接字符串",
 		EnvVar: "TECH_SHARE_DB_CONN",
-		Value:  "root:@tcp(127.0.0.1:3306)/tech_share?parseTime=true",
+		Value:  "tech_share:tech-share123@tcp(127.0.0.1:3306)/tech_share?parseTime=true",
 	}))
 	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
 		Name:   "storage_path",
