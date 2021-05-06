@@ -16,6 +16,14 @@ build-orm:
 	orm 'internal/service/model/*.yml'
 	gofmt -s -w internal/service/model/*.go
 
+.PHONY: run-dashboard
+run-dashboard:
+	cd dashboard && npm run serve
+
+.PHONY: build-dashboard
+build-dashboard:
+	cd dashboard && yarn build
+
 .PHONY: dist
 dist: build-orm
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(LDFLAGS)" -o bin/tech-share-linux cmd/*.go

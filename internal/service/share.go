@@ -39,6 +39,9 @@ type ShareService interface {
 	LikeShare(ctx context.Context, id int64, userID int64, positive bool) (bool, error)
 	// JoinShare user join a share or cancel
 	JoinShare(ctx context.Context, id int64, userID int64, positive bool) (bool, error)
+
+	// IsUserLikeOrJoinShares return whether the user join or like the shares
+	IsUserLikeOrJoinShares(ctx context.Context, userID int64, shareIDs []int64) (map[int64]UserLikeOrJoinShare, error)
 }
 
 func NewShareService(cc infra.Resolver, db *sql.DB) ShareService {
@@ -211,7 +214,7 @@ func (p shareService) CreateShare(ctx context.Context, share Share) (int64, erro
 			model.ShareFieldSubjectType:  share.SubjectType,
 			model.ShareFieldDescription:  share.Description,
 			model.ShareFieldShareUser:    share.ShareUser,
-			model.ShareFieldCreateUserId: share.CreateUserID,
+			model.ShareFieldCreateUserId: share.CreateUserId,
 			model.ShareFieldLikeCount:    share.LikeCount,
 			model.ShareFieldJoinCount:    share.JoinCount,
 			model.ShareFieldStatus:       share.Status,
@@ -456,10 +459,42 @@ func (p shareService) RemoveShare(ctx context.Context, id int64) (bool, error) {
 	return affected > 0, nil
 }
 
+func (p shareService) IsUserLikeOrJoinShares(ctx context.Context, userID int64, shareIDs []int64) (map[int64]UserLikeOrJoinShare, error) {
+	rels, err := model.NewShareUserRelModel(p.db).Get(query.Builder().
+		Where(model.ShareUserRelFieldUserId, userID).
+		WhereIn(model.ShareUserRelFieldShareId, int64SliceToInterface(shareIDs)...))
+	if err != nil {
+		return nil, err
+	}
+
+	results := make(map[int64]UserLikeOrJoinShare)
+	_ = coll.MustNew(rels).GroupBy(func(rel model.ShareUserRel) int64 {
+		return rel.ShareId.ValueOrZero()
+	}).Map(func(ss []interface{}, shareID int64) UserLikeOrJoinShare {
+		res := UserLikeOrJoinShare{ShareID: shareID}
+		for _, s := range ss {
+			if s.(model.ShareUserRel).RelType.ValueOrZero() == int64(RelTypeJoin) {
+				res.Join = true
+			} else {
+				res.Like = true
+			}
+		}
+
+		return res
+	}).All(&results)
+	return results, nil
+}
+
 func relTypeToField(relType int8) string {
 	if relType == RelTypeLike {
 		return model.ShareFieldLikeCount
 	}
 
 	return model.ShareFieldJoinCount
+}
+
+func int64SliceToInterface(items []int64) []interface{} {
+	res := make([]interface{}, 0)
+	_ = coll.Map(items, &res)
+	return res
 }

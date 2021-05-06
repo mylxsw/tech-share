@@ -12,8 +12,8 @@ import (
 	"github.com/mylxsw/tech-share/internal/service"
 )
 
-// currentUserID extract current user from request
-func currentUserID(req web.Request) service.UserInfo {
+// currentUser extract current user from request
+func currentUser(req web.Request) service.UserInfo {
 	userLogin, ok := req.Session().Values["user_login"]
 	if !ok {
 		return service.UserInfo{}
@@ -35,6 +35,7 @@ func (ctl AuthController) Register(router web.Router) {
 	router.Group("auth/", func(router web.Router) {
 		router.Post("/logout/", ctl.Logout).Name("auth:logout")
 		router.Post("/login-ldap/", ctl.LdapLogin).Name("auth:login-ldap")
+		router.Get("/current", ctl.CurrentUser).Name("auth:current")
 	})
 }
 
@@ -46,6 +47,16 @@ type User struct {
 
 func (ctl AuthController) Logout(req web.Request) error {
 	delete(req.Session().Values, "user_login")
+	return nil
+}
+
+// CurrentUser return current user info
+func (ctl AuthController) CurrentUser(ctx web.Context, req web.Request) *User {
+	if userLogin, ok := req.Session().Values["user_login"]; ok {
+		user := userLogin.(service.UserInfo)
+		return &User{ID: user.Id, Name: user.Name, UUID: user.Uuid}
+	}
+
 	return nil
 }
 

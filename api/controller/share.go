@@ -4,6 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/mylxsw/asteria/log"
+	"github.com/mylxsw/coll"
 	"github.com/mylxsw/glacier/infra"
 	"github.com/mylxsw/glacier/web"
 	"github.com/mylxsw/tech-share/config"
@@ -61,10 +63,31 @@ func (ctl ShareController) Shares(ctx web.Context, req web.Request, shareSrv ser
 		return nil, err
 	}
 
+	var shareIDs []int64
+	_ = coll.Map(shares, &shareIDs, func(s service.Share) int64 { return s.Id })
+
+	userLikeOrJoinShares, err := shareSrv.IsUserLikeOrJoinShares(context.TODO(), currentUser(req).Id, shareIDs)
+	if err != nil {
+		log.Errorf("query user_like_or_join_shares failed: %v", err)
+	}
+
 	return &PaginateRes{
 		Page: meta,
 		Data: shares,
+		Extra: SharesExtra{
+			UserLikeOrJoin: userLikeOrJoinShares,
+		},
+		Search: map[string]interface{}{
+			"status":   status,
+			"creator":  creator,
+			"page":     page,
+			"per_page": perPage,
+		},
 	}, nil
+}
+
+type SharesExtra struct {
+	UserLikeOrJoin map[int64]service.UserLikeOrJoinShare `json:"user_like_or_join"`
 }
 
 // MyShares return all shares for current user
@@ -77,7 +100,7 @@ func (ctl ShareController) MyShares(ctx web.Context, req web.Request, shareSrv s
 
 	filter := service.ShareFilter{
 		Status:  int8(status),
-		Creator: currentUserID(req).Id,
+		Creator: currentUser(req).Id,
 	}
 	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, page, perPage)
 	if err != nil {
@@ -87,6 +110,11 @@ func (ctl ShareController) MyShares(ctx web.Context, req web.Request, shareSrv s
 	return &PaginateRes{
 		Page: meta,
 		Data: shares,
+		Search: map[string]interface{}{
+			"status":   status,
+			"page":     page,
+			"per_page": perPage,
+		},
 	}, nil
 }
 
@@ -97,9 +125,13 @@ func (ctl ShareController) CreateShare(ctx web.Context, req web.Request, shareSr
 		return err
 	}
 
+	if share.ShareUser == "" {
+		share.ShareUser = currentUser(req).Name
+	}
+
 	_, err := shareSrv.CreateShare(context.TODO(), service.Share{
 		ShareUpdateFields: share,
-		CreateUserID:      currentUserID(req).Id,
+		CreateUserId:      currentUser(req).Id,
 	})
 	return err
 }
@@ -147,7 +179,7 @@ func (ctl ShareController) LikeShare(ctx web.Context, req web.Request, shareSrv 
 		return err
 	}
 
-	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req).Id, true)
+	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUser(req).Id, true)
 	return err
 }
 
@@ -158,7 +190,7 @@ func (ctl ShareController) DislikeShare(ctx web.Context, req web.Request, shareS
 		return err
 	}
 
-	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUserID(req).Id, false)
+	_, err = shareSrv.LikeShare(context.TODO(), int64(id), currentUser(req).Id, false)
 	return err
 }
 
@@ -169,7 +201,7 @@ func (ctl ShareController) JoinShare(ctx web.Context, req web.Request, shareSrv 
 		return err
 	}
 
-	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req).Id, true)
+	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUser(req).Id, true)
 	return err
 }
 
@@ -180,7 +212,7 @@ func (ctl ShareController) LeaveShare(ctx web.Context, req web.Request, shareSrv
 		return err
 	}
 
-	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUserID(req).Id, false)
+	_, err = shareSrv.JoinShare(context.TODO(), int64(id), currentUser(req).Id, false)
 	return err
 }
 
