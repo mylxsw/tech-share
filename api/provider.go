@@ -65,7 +65,7 @@ func (s Provider) muxRoutes(cc infra.Resolver, router *mux.Router) {
 		// health check
 		router.PathPrefix("/health").Handler(HealthCheck{})
 		// file storage
-		router.PathPrefix("/storage").Handler(http.FileServer(http.Dir(conf.StoragePath)))
+		router.PathPrefix("/storage").Handler(http.StripPrefix("/storage", http.FileServer(http.Dir(conf.StoragePath))))
 	})
 }
 

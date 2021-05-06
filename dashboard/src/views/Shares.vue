@@ -89,6 +89,17 @@
                         <b-form-select v-model="finishShareForm.real_duration" :options="plan_duration_options"></b-form-select>
                     </b-form-group>
 
+                    <b-form-group id="attachment-upload-group" label="附件上传" label-for="attachment-upload-input">
+                        <uploader :options="uploaderOptions" ref="uploader" :file-status-text="uploaderStatusText" @file-error="fileUploadFailed">
+                            <uploader-unspport></uploader-unspport>
+                            <uploader-drop>
+                                <p>将文件拖拽到这里或者 </p>
+                                <uploader-btn>选择要上传的文件</uploader-btn>
+                            </uploader-drop>
+                            <uploader-list></uploader-list>
+                        </uploader>
+                    </b-form-group>
+
                     <b-form-group id="note-input-group" label="备注" label-for="note-input">
                         <b-form-textarea id="note-input" placeholder="Enter note" v-model="finishShareForm.note" rows="3"/>
                     </b-form-group>
@@ -128,7 +139,13 @@
                         </b-form-group>
                     </div>
 
-                    <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null"></div>
+                    <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null">
+                        <b-form-group label="附件">
+                            <li v-for="(atta, index) in shareDetail.attachments" :key="index">
+                                <a :href="'/storage/' + atta.atta_path" target="_blank">{{ atta.name }}</a>
+                            </li>
+                        </b-form-group>
+                    </div>
 
                     <div v-if="current_share != null && current_share.create_user_id != this.$store.getters.user.id && current_share.status != 3">
                         <b-button size="sm" variant="success" v-if="canLike(current_share)" @click="iLikeItd(current_share.id, true)">感兴趣</b-button>
@@ -217,6 +234,18 @@ export default {
                 current_page: 1,
                 // 分页信息
                 page: {last_page: 1, page: 1, per_page: 20, total: 0},
+                // 文件上传
+                uploaderOptions: {
+                    target: '/api/upload',
+                    testChunks: false,
+                },
+                uploaderStatusText: {
+                    success: '成功',
+                    error: '错误',
+                    uploading: '上传中',
+                    paused: '暂停中',
+                    waiting: '等待中',
+                },
             };
         },
         computed: {
@@ -233,6 +262,10 @@ export default {
             'current_page': 'reload',
         },
         methods: {
+            // 文件上传失败
+            fileUploadFailed(rootFile, file, message) {
+                this.ToastError('文件上传失败：' + message);
+            },
             // 分享搜索
             searchSubmit(evt) {
                 evt.preventDefault();
@@ -288,11 +321,14 @@ export default {
             },
             finishShare() {
                 let params = {};
-
                 params.real_duration = parseInt(this.finishShareForm.real_duration);
                 params.note = this.finishShareForm.note;
                 params.attachments = [];
-                
+                for (let i in this.$refs.uploader.uploader.files) {
+                   if (this.$refs.uploader.uploader.files[i].chunks[0] === undefined) { continue; }
+                   params.attachments.push(JSON.parse(this.$refs.uploader.uploader.files[i].chunks[0].processedState.res).id);
+                }
+
                 axios.post('/api/shares/' + this.current_share.id + '/finish/', params).then(response => {
                     this.$root.$emit('bv::hide::modal', 'finish-share-plan-dialog');
                     this.SuccessBox('操作成功');

@@ -6,6 +6,7 @@ import './plugins/bootstrap-vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import uploader from 'vue-simple-uploader'
 
 import { BootstrapVueIcons } from 'bootstrap-vue'
 
@@ -21,6 +22,7 @@ library.add(faPlus)
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 
 Vue.use(BootstrapVueIcons);
+Vue.use(uploader);
 
 Vue.component('DateTime', DateTime);
 Vue.component('HumanTime', HumanTime);
