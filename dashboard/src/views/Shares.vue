@@ -43,8 +43,10 @@
                             <b-button size="sm" variant="success" v-if="row.item.status === 2 && !row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, true)">参加</b-button>
                             <b-button size="sm" variant="danger" v-if="row.item.status === 2 && row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, false)">不参加了</b-button>
                             
+                            <b-button size="sm" variant="info" v-if="canPlan(row.item)" @click="editShareDialog(row.item)">编辑</b-button>
                             <b-button size="sm" variant="success" v-if="canPlan(row.item)" @click="createSharePlanDialog(row.item)">排期</b-button>
                             <b-button size="sm" variant="" v-if="canCancelPlan(row.item)" @click="cancelSharePlan(row.item)">取消排期</b-button>
+                            <b-button size="sm" variant="info" v-if="canCancelPlan(row.item)" @click="editSharePlanDialog(row.item)">编辑排期</b-button>
                             <b-button size="sm" variant="warning" v-if="canFinishPlan(row.item)" @click="finishShareDialog(row.item)">完结</b-button>
                             <b-button size="sm" variant="danger" v-if="canDelete(row.item)">删除</b-button>
 
@@ -75,6 +77,24 @@
                         <b-form-input id="share_user-input" v-model="createForm.share_user" type="text" placeholder="Enter share user"></b-form-input>
                     </b-form-group>
                     <b-button type="submit" variant="primary">确认发起</b-button>
+                </form>
+            </b-modal>
+            <b-modal id="edit-share-dialog" title="编辑分享" hide-footer size="xl">
+                <form @submit.stop.prevent="updateShare">
+                    <b-form-group id="subject-input-group" label="主题" label-for="subject-input">
+                        <b-form-input id="subject-input" v-model="createForm.subject" type="text" placeholder="Enter subject" required></b-form-input>
+                    </b-form-group>
+                    <b-form-group id="subject-type-select-group" label="主题类型" label-for="subject-type-select">
+                        <b-form-select v-model="createForm.subject_type" :options="subject_type_options"></b-form-select>
+                    </b-form-group>
+                    <b-form-group id="description-input-group" label="内容简介" label-for="description-input">
+                        <b-form-textarea id="description-input" placeholder="Enter description" v-model="createForm.description" rows="6"/>
+                    </b-form-group>
+
+                    <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input" description="留空则分享人是自己">
+                        <b-form-input id="share_user-input" v-model="createForm.share_user" type="text" placeholder="Enter share user"></b-form-input>
+                    </b-form-group>
+                    <b-button type="submit" variant="primary">保存</b-button>
                 </form>
             </b-modal>
             <b-modal id="create-share-plan-dialog" :title="currentSharePlanTitle" hide-footer size="xl">
@@ -174,7 +194,6 @@
                         </b-form-group>
                     </div>
 
-
                 </b-form>
                 <div v-if="current_share != null && current_share.create_user_id != this.$store.getters.user.id && current_share.status != 3" class="mt-3">
                     <b-button size="sm" variant="success" v-if="canLike(current_share)" @click="iLikeItd(current_share.id, true)">感兴趣</b-button>
@@ -197,27 +216,13 @@ export default {
         data() {
             return {
                 // 创建分享表单
-                createForm: {
-                    subject: '',
-                    subject_type: '',
-                    description: '',
-                    share_user: this.$store.getters.user != null ? this.$store.getters.user.name : null,
-                },
+                createForm: this.initCreateForm(),
                 // 创建分享计划表单
-                createPlanForm: {
-                    share_date: '',
-                    share_time: '',
-                    share_room: '',
-                    plan_duration: 0,
-                },
+                createPlanForm: this.initCreatePlanForm(),
                 // 完成分享表单
-                finishShareForm: {
-                    real_duration: 0,
-                    note: '',
-                    attachments: [],
-                },
+                finishShareForm: this.initFinishShareForm(),
                 // 分享详情
-                shareDetail: {share: {}, plan: {}, like_users: [], join_users: []},
+                shareDetail: this.initShareDetail(),
                 // 搜索表单
                 search: {
                     status: this.QueryArgs(this.$route, 'status'),
@@ -307,6 +312,40 @@ export default {
             'current_page': 'reload',
         },
         methods: {
+            // 初始化
+            initAllForm() {
+                this.createForm = this.initCreateForm();
+                this.createPlanForm = this.initCreatePlanForm();
+                this.finishShareForm = this.initFinishShareForm();
+                this.shareDetail = this.initShareDetail();
+            },
+            initCreateForm() {
+                return {
+                    subject: '',
+                    subject_type: '',
+                    description: '',
+                    share_user: this.$store.getters.user != null ? this.$store.getters.user.name : null,
+                }
+            },
+            initCreatePlanForm() {
+                return {
+                    share_date: '',
+                    share_time: '',
+                    share_room: '',
+                    plan_duration: 0,
+                    note: '',
+                };
+            },
+            initFinishShareForm() {
+                return {
+                    real_duration: 0,
+                    note: '',
+                    attachments: [],
+                };
+            },
+            initShareDetail() {
+                return {share: {}, plan: {}, like_users: [], join_users: []};
+            },
             // 当前页面动作类型
             action() {
                 return this.QueryArgs(this.$route, 'act');
@@ -376,13 +415,30 @@ export default {
             createShare() {
                 axios.post('/api/shares/', this.createForm).then(() => {
                     this.$root.$emit('bv::hide::modal', 'create-share-dialog');
-                    this.SuccessBox('创建成功');
+                    this.ToastSuccess('创建成功');
+                    this.reload();
+                }).catch(error => {this.ErrorBox(error)})
+            },
+            editShareDialog(share) {
+                this.current_share = share;
+                this.createForm.subject = share.subject;
+                this.createForm.subject_type = share.subject_type;
+                this.createForm.description = share.description;
+                this.createForm.share_user = share.share_user;
+
+                this.$root.$emit('bv::show::modal', 'edit-share-dialog');
+            },
+            updateShare() {
+                axios.post('/api/shares/' + this.current_share.id + '/', this.createForm).then(() => {
+                    this.$root.$emit('bv::hide::modal', 'edit-share-dialog');
+                    this.ToastSuccess('修改成功');
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)})
             },
             // 创建分享计划
             createSharePlanDialog(share) {
                 this.current_share = share;
+                this.createPlanForm = this.initCreatePlanForm();
                 this.$root.$emit('bv::show::modal', 'create-share-plan-dialog');
             },
             createSharePlan() {
@@ -395,13 +451,25 @@ export default {
 
                 axios.post('/api/shares/' + this.current_share.id + '/plan', params).then(() => {
                     this.$root.$emit('bv::hide::modal', 'create-share-plan-dialog');
-                    this.SuccessBox('操作成功');
+                    this.ToastSuccess('操作成功');
                     this.reload();
+                }).catch(error => {this.ErrorBox(error)});
+            },
+            editSharePlanDialog(share) {
+                this.current_share = share;
+                axios.get('/api/shares/' + share.id + '/').then(response => {
+                    this.createPlanForm.share_date = moment(response.data.plan.share_at).format('YYYY-MM-DD');
+                    this.createPlanForm.share_time = moment(response.data.plan.share_at).format('HH:mm');
+                    this.createPlanForm.share_room = response.data.plan.share_room;
+                    this.createPlanForm.plan_duration = response.data.plan.plan_duration;
+                    this.createPlanForm.note = response.data.plan.note;
+
+                    this.$root.$emit('bv::show::modal', 'create-share-plan-dialog');
                 }).catch(error => {this.ErrorBox(error)});
             },
             cancelSharePlan(share) {
                 axios.delete('/api/shares/' + share.id + '/plan').then(() => { 
-                    this.SuccessBox('操作成功');
+                    this.ToastSuccess('操作成功');
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)});
             },
@@ -422,7 +490,7 @@ export default {
 
                 axios.post('/api/shares/' + this.current_share.id + '/finish/', params).then(() => {
                     this.$root.$emit('bv::hide::modal', 'finish-share-plan-dialog');
-                    this.SuccessBox('操作成功');
+                    this.ToastSuccess('操作成功');
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)});
             },
@@ -524,6 +592,8 @@ export default {
                 }).catch(error => {
                     this.ToastError(error)
                 });
+
+                this.initAllForm();
             }
         },
         mounted() {
