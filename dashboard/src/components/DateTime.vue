@@ -11,7 +11,7 @@
         },
         methods: {
             formatted(t) {
-                return moment(t).format('YYYY-MM-DD HH:mm:ss');
+                return moment(t).format('YYYY-MM-DD HH:mm');
             }
         }
     }

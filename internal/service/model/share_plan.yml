@@ -14,6 +14,8 @@ models:
       type: int64
     - name: share_at
       type: time.Time
+    - name: share_room
+      type: string
     - name: plan_duration
       type: int
     - name: real_duration

@@ -29,9 +29,10 @@ Vue.component('HumanTime', HumanTime);
 
 Vue.config.productionTip = false;
 
-const errorHandler = (error, vm) => {
+const errorHandler = (error) => {
     if (error === 'access-denied') {
         window.location.href = '/#/login';
+        return;
     }
 
     console.log(error);
@@ -41,7 +42,7 @@ Vue.config.errorHandler = errorHandler;
 Vue.prototype.$throw = (error) => errorHandler(error, this);
 
 Vue.prototype.QueryArgs = (route, name) => {
-    return route.query[name] !== undefined ? route.query[name] : null;
+    return route.query[name] !== undefined ? route.query[name] : '';
 }
 
 /**

@@ -216,6 +216,9 @@ func main() {
 			builder.Integer("trigger_user_id", false, true).Comment("用户id")
 			builder.Timestamp("created_at", 0).Nullable(true)
 		})
+		m.Schema("202105071404").Table("share_plan", func(builder *migrate.Builder) {
+			builder.String("share_room", 255).Nullable(true).Comment("分享会议室")
+		})
 
 		if err := m.Run(); err != nil {
 			panic(err)

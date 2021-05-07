@@ -24,6 +24,7 @@ type SharePlan struct {
 	Id           null.Int
 	ShareId      null.Int
 	ShareAt      null.Time
+	ShareRoom    null.String
 	PlanDuration null.Int
 	RealDuration null.Int
 	Note         null.String
@@ -47,6 +48,7 @@ type sharePlanOriginal struct {
 	Id           null.Int
 	ShareId      null.Int
 	ShareAt      null.Time
+	ShareRoom    null.String
 	PlanDuration null.Int
 	RealDuration null.Int
 	Note         null.String
@@ -69,6 +71,9 @@ func (inst *SharePlan) Staled(onlyFields ...string) bool {
 			return true
 		}
 		if inst.ShareAt != inst.original.ShareAt {
+			return true
+		}
+		if inst.ShareRoom != inst.original.ShareRoom {
 			return true
 		}
 		if inst.PlanDuration != inst.original.PlanDuration {
@@ -100,6 +105,10 @@ func (inst *SharePlan) Staled(onlyFields ...string) bool {
 				}
 			case "share_at":
 				if inst.ShareAt != inst.original.ShareAt {
+					return true
+				}
+			case "share_room":
+				if inst.ShareRoom != inst.original.ShareRoom {
 					return true
 				}
 			case "plan_duration":
@@ -149,6 +158,9 @@ func (inst *SharePlan) StaledKV(onlyFields ...string) query.KV {
 		if inst.ShareAt != inst.original.ShareAt {
 			kv["share_at"] = inst.ShareAt
 		}
+		if inst.ShareRoom != inst.original.ShareRoom {
+			kv["share_room"] = inst.ShareRoom
+		}
 		if inst.PlanDuration != inst.original.PlanDuration {
 			kv["plan_duration"] = inst.PlanDuration
 		}
@@ -179,6 +191,10 @@ func (inst *SharePlan) StaledKV(onlyFields ...string) query.KV {
 			case "share_at":
 				if inst.ShareAt != inst.original.ShareAt {
 					kv["share_at"] = inst.ShareAt
+				}
+			case "share_room":
+				if inst.ShareRoom != inst.original.ShareRoom {
+					kv["share_room"] = inst.ShareRoom
 				}
 			case "plan_duration":
 				if inst.PlanDuration != inst.original.PlanDuration {
@@ -352,6 +368,7 @@ type SharePlanPlain struct {
 	Id           int64
 	ShareId      int64
 	ShareAt      time.Time
+	ShareRoom    string
 	PlanDuration int
 	RealDuration int
 	Note         string
@@ -366,6 +383,7 @@ func (w SharePlanPlain) ToSharePlan(allows ...string) SharePlan {
 			Id:           null.IntFrom(int64(w.Id)),
 			ShareId:      null.IntFrom(int64(w.ShareId)),
 			ShareAt:      null.TimeFrom(w.ShareAt),
+			ShareRoom:    null.StringFrom(w.ShareRoom),
 			PlanDuration: null.IntFrom(int64(w.PlanDuration)),
 			RealDuration: null.IntFrom(int64(w.RealDuration)),
 			Note:         null.StringFrom(w.Note),
@@ -384,6 +402,8 @@ func (w SharePlanPlain) ToSharePlan(allows ...string) SharePlan {
 			res.ShareId = null.IntFrom(int64(w.ShareId))
 		case "share_at":
 			res.ShareAt = null.TimeFrom(w.ShareAt)
+		case "share_room":
+			res.ShareRoom = null.StringFrom(w.ShareRoom)
 		case "plan_duration":
 			res.PlanDuration = null.IntFrom(int64(w.PlanDuration))
 		case "real_duration":
@@ -413,6 +433,7 @@ func (w *SharePlan) ToSharePlanPlain() SharePlanPlain {
 		Id:           w.Id.Int64,
 		ShareId:      w.ShareId.Int64,
 		ShareAt:      w.ShareAt.Time,
+		ShareRoom:    w.ShareRoom.String,
 		PlanDuration: int(w.PlanDuration.Int64),
 		RealDuration: int(w.RealDuration.Int64),
 		Note:         w.Note.String,
@@ -438,6 +459,7 @@ const (
 	SharePlanFieldId           = "id"
 	SharePlanFieldShareId      = "share_id"
 	SharePlanFieldShareAt      = "share_at"
+	SharePlanFieldShareRoom    = "share_room"
 	SharePlanFieldPlanDuration = "plan_duration"
 	SharePlanFieldRealDuration = "real_duration"
 	SharePlanFieldNote         = "note"
@@ -451,6 +473,7 @@ func SharePlanFields() []string {
 		"id",
 		"share_id",
 		"share_at",
+		"share_room",
 		"plan_duration",
 		"real_duration",
 		"note",
@@ -589,6 +612,7 @@ func (m *SharePlanModel) Get(builders ...query.SQLBuilder) ([]SharePlan, error) 
 			"id",
 			"share_id",
 			"share_at",
+			"share_room",
 			"plan_duration",
 			"real_duration",
 			"note",
@@ -608,6 +632,8 @@ func (m *SharePlanModel) Get(builders ...query.SQLBuilder) ([]SharePlan, error) 
 		case "share_id":
 			selectFields = append(selectFields, f)
 		case "share_at":
+			selectFields = append(selectFields, f)
+		case "share_room":
 			selectFields = append(selectFields, f)
 		case "plan_duration":
 			selectFields = append(selectFields, f)
@@ -635,6 +661,8 @@ func (m *SharePlanModel) Get(builders ...query.SQLBuilder) ([]SharePlan, error) 
 				scanFields = append(scanFields, &sharePlanVar.ShareId)
 			case "share_at":
 				scanFields = append(scanFields, &sharePlanVar.ShareAt)
+			case "share_room":
+				scanFields = append(scanFields, &sharePlanVar.ShareRoom)
 			case "plan_duration":
 				scanFields = append(scanFields, &sharePlanVar.PlanDuration)
 			case "real_duration":

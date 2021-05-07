@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 import Shares from './views/Shares';
+import Share from './views/Share';
 import Login from './views/Login';
 
 Vue.use(Router);
@@ -13,6 +14,7 @@ Router.prototype.push = function push(location) {
 export default new Router({
     routes: [
         {path: '/', component: Shares},
+        {path: '/share', component: Share},
         {path: '/login', component: Login},
     ]
 });

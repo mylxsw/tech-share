@@ -27,7 +27,7 @@ type ShareService interface {
 	// RemovePlan delete a plan for a share
 	RemovePlan(ctx context.Context, shareID int64) (bool, error)
 	// GetShares return all shares
-	GetShares(ctx context.Context, filter ShareFilter, page int64, perPage int64) ([]Share, query.PaginateMeta, error)
+	GetShares(ctx context.Context, filter ShareFilter, sortDesc bool, page int64, perPage int64) ([]ShareExt, query.PaginateMeta, error)
 	// FinishShare set a share as finished status
 	FinishShare(ctx context.Context, shareID int64, sf ShareFinishFields) (bool, error)
 
@@ -153,19 +153,27 @@ func (p shareService) FinishShare(ctx context.Context, shareID int64, sf ShareFi
 	return ok, err
 }
 
-func (p shareService) GetShares(ctx context.Context, filter ShareFilter, page int64, perPage int64) ([]Share, query.PaginateMeta, error) {
-	condition := query.Builder().OrderBy(model.ShareFieldId, "desc")
+func (p shareService) GetShares(ctx context.Context, filter ShareFilter, sortDesc bool, page int64, perPage int64) ([]ShareExt, query.PaginateMeta, error) {
+	statusSort := "asc"
+	if sortDesc {
+		statusSort = "desc"
+	}
+
+	condition := query.Builder().OrderBy(model.ShareFieldStatus, statusSort).OrderBy(model.ShareFieldId, "desc")
 	if filter.Creator > 0 {
 		condition = condition.Where(model.ShareFieldCreateUserId, filter.Creator)
 	}
-	if filter.Status > 0 {
-		condition = condition.Where(model.ShareFieldStatus, filter.Status)
+	if len(filter.Statuses) > 0 {
+		condition = condition.WhereIn(model.ShareFieldStatus, sliceToInterface(filter.Statuses)...)
+	}
+	if filter.Type != "" {
+		condition = condition.Where(model.ShareFieldSubjectType, filter.Type)
 	}
 
 	return p.getShares(ctx, condition, page, perPage)
 }
 
-func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, perPage int64) ([]Share, query.PaginateMeta, error) {
+func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, perPage int64) ([]ShareExt, query.PaginateMeta, error) {
 	if page <= 0 {
 		return nil, query.PaginateMeta{}, fmt.Errorf("invalid page")
 	}
@@ -178,10 +186,26 @@ func (p shareService) getShares(ctx context.Context, qb query.SQLBuilder, page, 
 		return nil, meta, err
 	}
 
-	var results []Share
-	_ = coll.MustNew(shares).Map(func(s model.Share) Share {
-		var share Share
+	sharePlanRefs := make(map[int64]model.SharePlan)
+	var shareIds []int64
+	_ = coll.Map(shares, &shareIds, func(s model.Share) int64 { return s.Id.ValueOrZero() })
+	if len(shareIds) > 0 {
+		plans, err := model.NewSharePlanModel(p.db).Get(query.Builder().WhereIn(model.SharePlanFieldShareId, sliceToInterface(shareIds)...))
+		if err == nil {
+			_ = coll.MustNew(plans).AsMap(func(plan model.SharePlan) int64 { return plan.ShareId.ValueOrZero() }).All(&sharePlanRefs)
+		}
+	}
+
+	var results []ShareExt
+	_ = coll.MustNew(shares).Map(func(s model.Share) ShareExt {
+		var share ShareExt
 		_ = copier.Copy(&share, s.ToSharePlain())
+
+		if sp, ok := sharePlanRefs[share.Id]; ok {
+			share.ShareAt = sp.ShareAt.ValueOrZero()
+			share.ShareRoom = sp.ShareRoom.ValueOrZero()
+			share.PlanDuration = sp.PlanDuration.ValueOrZero()
+		}
 
 		return share
 	}).All(&results)
@@ -254,6 +278,7 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 		// onlyFields only update this fields
 		onlyFields := []string{
 			model.SharePlanFieldShareAt,
+			model.SharePlanFieldShareRoom,
 			model.SharePlanFieldPlanDuration,
 			model.SharePlanFieldNote,
 		}
@@ -279,6 +304,7 @@ func (p shareService) CreateOrUpdatePlan(ctx context.Context, shareID int64, pla
 		}
 
 		planExi.ShareAt = sp.ShareAt
+		planExi.ShareRoom = sp.ShareRoom
 		planExi.PlanDuration = sp.PlanDuration
 		planExi.Note = sp.Note
 
@@ -460,9 +486,13 @@ func (p shareService) RemoveShare(ctx context.Context, id int64) (bool, error) {
 }
 
 func (p shareService) IsUserLikeOrJoinShares(ctx context.Context, userID int64, shareIDs []int64) (map[int64]UserLikeOrJoinShare, error) {
+	if len(shareIDs) == 0 {
+		return make(map[int64]UserLikeOrJoinShare), nil
+	}
+
 	rels, err := model.NewShareUserRelModel(p.db).Get(query.Builder().
 		Where(model.ShareUserRelFieldUserId, userID).
-		WhereIn(model.ShareUserRelFieldShareId, int64SliceToInterface(shareIDs)...))
+		WhereIn(model.ShareUserRelFieldShareId, sliceToInterface(shareIDs)...))
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +523,7 @@ func relTypeToField(relType int8) string {
 	return model.ShareFieldJoinCount
 }
 
-func int64SliceToInterface(items []int64) []interface{} {
+func sliceToInterface(items interface{}) []interface{} {
 	res := make([]interface{}, 0)
 	_ = coll.Map(items, &res)
 	return res

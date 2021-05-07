@@ -4,52 +4,62 @@
             <b-card class="mb-2">
                 <b-card-text>
                     <b-form inline @submit="searchSubmit">
-                        <b-form-select v-model="search.status" class="mb-2 mr-sm-2 mb-sm-0" placeholder="状态" :options="status_options"></b-form-select>
+                        <b-form-select v-model="search.status" class="mb-2 mr-sm-2 mb-sm-0" placeholder="状态" :options="status_options" v-if="action() !== 'recently'"></b-form-select>
+                        <b-form-select v-model="search.type" class="mb-2 mr-sm-2 mb-sm-0" placeholder="类型" :options="subjectTypeFilterOptions"></b-form-select>
                         <b-button variant="light" type="submit">搜索</b-button>
                     </b-form>   
                 </b-card-text>
             </b-card>
 
-            <b-card class="mb-2" border-variant="warning" header="分享列表" header-bg-variant="warning">
-                <b-card-body>
-                    <b-table :items="shares" :fields="shares_fields">
-                        <template v-slot:cell(subject)="row">
-                            <b-link @click="previewShare(row.item)">{{ row.item.subject }}</b-link>
-                        </template>
-                        <template v-slot:cell(created_at)="row">
-                            <date-time :value="row.item.created_at"></date-time>
-                        </template>
-                        <template v-slot:cell(status)="row">
-                            {{ statusText(row.item.status) }}
-                        </template>
-                        <template v-slot:cell(votes)="row">
-                            <span v-if="row.item.status === 1">{{ row.item.like_count }}</span>
-                            <span v-if="row.item.status > 1">{{ row.item.join_count }}</span>
-                        </template>
-                        <template v-slot:cell(opt)="row">
-                             <b-button-group>
-                                
-                                <b-button size="sm" variant="success" v-if="canLike(row.item)" @click="iLikeIt(row.item.id, true)">感兴趣</b-button>
-                                <b-button size="sm" variant="danger" v-if="canNotLike(row.item)" @click="iLikeIt(row.item.id, false)">不感兴趣</b-button>
-                                <b-button size="sm" variant="success" v-if="row.item.status === 2 && !row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, true)">参加</b-button>
-                                <b-button size="sm" variant="danger" v-if="row.item.status === 2 && row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, false)">不参加了</b-button>
-                                
-                                <b-button size="sm" variant="success" v-if="canPlan(row.item)" @click="createSharePlanDialog(row.item)">排期</b-button>
-                                <b-button size="sm" variant="" v-if="canCancelPlan(row.item)" @click="cancelSharePlan(row.item)">取消排期</b-button>
-                                <b-button size="sm" variant="warning" v-if="canFinishPlan(row.item)" @click="finishShareDialog(row.item)">完结</b-button>
-                                <b-button size="sm" variant="danger" v-if="canDelete(row.item)">删除</b-button>
+            <b-card class="mb-2" no-body v-if="shares.length > 0">
+                <b-table :items="shares" :fields="shares_fields" :tbody-tr-class="sharesRowClass">
+                    <template v-slot:cell(subject)="row">
+                        <b-badge class="mr-2" :variant="randomStyle(row.item.subject_type)">{{ row.item.subject_type }}</b-badge>
+                        <b-link v-b-tooltip.hover :title="'创建于 ' + dateFormat(row.item.created_at)" @click="previewShare(row.item)">{{ row.item.subject }}</b-link>
+                        <b-link class="ml-2" target="_blank" :to="'/share?id=' + row.item.id"><font-awesome-icon icon="external-link-alt"></font-awesome-icon></b-link>
+                    </template>
+                    <template v-slot:cell(share_at)="row">
+                        <span v-if="row.item.share_at != '0001-01-01T00:00:00Z'">
+                            <date-time :value="row.item.share_at"></date-time>
+                            <span v-if="row.item.share_room != ''"> / {{ row.item.share_room }}</span>
+                            <span v-if="row.item.plan_duration > 0"> / {{ row.item.plan_duration }} 分钟</span>
+                        </span>
+                        <span v-else>-</span>
+                    </template>
+                    <template v-slot:cell(status)="row">
+                        <span :class="statusText(row.item.status).class">{{ statusText(row.item.status).text }}</span> 
+                        <span v-if="row.item.status != 3" class="ml-1" v-b-tooltip.hover :title="'当前 ' + voteCountSelector(row.item) + ' 人'">
+                            <b-badge variant="" v-if="voteCountSelector(row.item) < 5">{{ voteCountSelector(row.item) }}</b-badge>
+                            <b-badge variant="success" v-else-if="voteCountSelector(row.item) <= 10">{{ voteCountSelector(row.item) }}</b-badge>
+                            <b-badge variant="warning" v-else>{{ voteCountSelector(row.item) }}</b-badge>
+                        </span>
+                    </template>
 
-                                <b-button size="sm" variant="primary" v-if="row.item.status === 3" @click="previewShare(row.item)">回看</b-button>
-                            </b-button-group>
-                        </template>
-                    </b-table>
+                    <template v-slot:cell(opt)="row">
+                        <b-button-group>
+                            
+                            <b-button size="sm" variant="success" v-if="canLike(row.item)" @click="iLikeIt(row.item.id, true)">感兴趣</b-button>
+                            <b-button size="sm" variant="danger" v-if="canNotLike(row.item)" @click="iLikeIt(row.item.id, false)">不感兴趣</b-button>
+                            <b-button size="sm" variant="success" v-if="row.item.status === 2 && !row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, true)">参加</b-button>
+                            <b-button size="sm" variant="danger" v-if="row.item.status === 2 && row.item.current_user_join && $store.getters.user.id != row.item.create_user_id" @click="iJoinIt(row.item.id, false)">不参加了</b-button>
+                            
+                            <b-button size="sm" variant="success" v-if="canPlan(row.item)" @click="createSharePlanDialog(row.item)">排期</b-button>
+                            <b-button size="sm" variant="" v-if="canCancelPlan(row.item)" @click="cancelSharePlan(row.item)">取消排期</b-button>
+                            <b-button size="sm" variant="warning" v-if="canFinishPlan(row.item)" @click="finishShareDialog(row.item)">完结</b-button>
+                            <b-button size="sm" variant="danger" v-if="canDelete(row.item)">删除</b-button>
 
-                    <b-pagination v-model="current_page" :total-rows="page.total" :per-page="page.per_page"></b-pagination>
-                </b-card-body>
+                            <b-button size="sm" variant="primary" v-if="row.item.status === 3" @click="previewShare(row.item)">回看</b-button>
+                        </b-button-group>
+                    </template>
+                </b-table>
+                <div class="mt-3" v-if="page.last_page > 1">
+                    <b-pagination v-model="current_page" :total-rows="page.total" :per-page="page.per_page" align="center"></b-pagination>
+                </div>
             </b-card>
+            <b-card class="mb-2" v-if="shares.length == 0">当前没有相关分享</b-card>
 
-            <b-button v-b-modal.create-share-dialog>创建分享</b-button>
-            <b-modal id="create-share-dialog" title="创建分享" hide-footer size="xl">
+            <b-button v-b-modal.create-share-dialog variant="primary">发起分享</b-button>
+            <b-modal id="create-share-dialog" title="发起分享" hide-footer size="xl">
                 <form @submit.stop.prevent="createShare">
                     <b-form-group id="subject-input-group" label="主题" label-for="subject-input">
                         <b-form-input id="subject-input" v-model="createForm.subject" type="text" placeholder="Enter subject" required></b-form-input>
@@ -64,7 +74,7 @@
                     <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input" description="留空则分享人是自己">
                         <b-form-input id="share_user-input" v-model="createForm.share_user" type="text" placeholder="Enter share user"></b-form-input>
                     </b-form-group>
-                    <b-button type="submit" variant="primary">创建</b-button>
+                    <b-button type="submit" variant="primary">确认发起</b-button>
                 </form>
             </b-modal>
             <b-modal id="create-share-plan-dialog" :title="currentSharePlanTitle" hide-footer size="xl">
@@ -75,6 +85,9 @@
                     </b-form-group>
                     <b-form-group id="plan_duration-select-group" label="预计时长" label-for="plan_duration-select">
                         <b-form-select v-model="createPlanForm.plan_duration" :options="plan_duration_options"></b-form-select>
+                    </b-form-group>
+                    <b-form-group label="分享地点" label-for="share_room-input">
+                        <b-form-input id="share_room-input" v-model="createPlanForm.share_room" type="text"></b-form-input>
                     </b-form-group>
                     <b-form-group id="note-input-group" label="备注" label-for="note-input">
                         <b-form-textarea id="note-input" placeholder="Enter note" v-model="createPlanForm.note" rows="3"/>
@@ -124,9 +137,23 @@
                         </b-form-group>
                     </div>
 
-                    <div v-if="shareDetail.plan != null">
+                    <div v-if="(shareDetail.join_users !== null && shareDetail.join_users.length > 0) || (shareDetail.like_users !== null && shareDetail.like_users.length > 0)" class="mt-3">
+                        <div v-if="shareDetail.like_users !== null && shareDetail.like_users.length > 0">
+                            对分享感兴趣的人<br />
+                            <b-badge class="mr-2" variant="info" v-for="(item, index) in shareDetail.like_users" :key="index">{{ item.name }}</b-badge>
+                        </div>
+                        <div v-if="shareDetail.join_users !== null && shareDetail.join_users.length > 0">
+                            报名参加分享的人<br />
+                            <b-badge class="mr-2" variant="primary" v-for="(item, index) in shareDetail.join_users" :key="index">{{ item.name }}</b-badge>
+                        </div>
+                    </div>
+
+                    <div v-if="shareDetail.plan != null" class="mt-3">
                         <b-form-group label="分享时间" readonly v-if="shareDetail.plan.share_at != ''">
                             <date-time :value="shareDetail.plan.share_at"></date-time>
+                        </b-form-group>
+                        <b-form-group label="分享地点" readonly v-if="shareDetail.plan.share_room != ''">
+                            <b-form-input v-model="shareDetail.plan.share_room" type="text" readonly></b-form-input>
                         </b-form-group>
                         <b-form-group label="预计时长" readonly v-if="shareDetail.plan.plan_duration > 0">
                             <b-form-input v-model="shareDetail.plan.plan_duration" type="text" readonly></b-form-input>
@@ -134,12 +161,12 @@
                         <b-form-group label="实际时长" readonly v-if="shareDetail.plan.real_duration > 0">
                             <b-form-input v-model="shareDetail.plan.real_duration" type="text" readonly></b-form-input>
                         </b-form-group>
-                        <b-form-group label="备注">
-                            <b-form-textarea v-model="shareDetail.plan.note" rows="4" readonly v-if="shareDetail.plan.note != ''"/>
+                        <b-form-group label="备注" v-if="shareDetail.plan.note != ''">
+                            <b-form-textarea v-model="shareDetail.plan.note" rows="4" readonly />
                         </b-form-group>
                     </div>
 
-                    <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null">
+                    <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null" class="mt-3">
                         <b-form-group label="附件">
                             <li v-for="(atta, index) in shareDetail.attachments" :key="index">
                                 <a :href="'/storage/' + atta.atta_path" target="_blank">{{ atta.name }}</a>
@@ -147,13 +174,14 @@
                         </b-form-group>
                     </div>
 
-                    <div v-if="current_share != null && current_share.create_user_id != this.$store.getters.user.id && current_share.status != 3">
-                        <b-button size="sm" variant="success" v-if="canLike(current_share)" @click="iLikeItd(current_share.id, true)">感兴趣</b-button>
-                        <b-button size="sm" variant="danger" v-if="canNotLike(current_share)" @click="iLikeItd(current_share.id, false)">不感兴趣</b-button>
-                        <b-button size="sm" variant="success" v-if="current_share.status === 2 && !current_share.current_user_join" @click="iJoinItd(current_share.id, true)">参加</b-button>
-                        <b-button size="sm" variant="danger" v-if="current_share.status === 2 && current_share.current_user_join" @click="iJoinItd(current_share.id, false)">不参加了</b-button>
-                    </div>
+
                 </b-form>
+                <div v-if="current_share != null && current_share.create_user_id != this.$store.getters.user.id && current_share.status != 3" class="mt-3">
+                    <b-button size="sm" variant="success" v-if="canLike(current_share)" @click="iLikeItd(current_share.id, true)">感兴趣</b-button>
+                    <b-button size="sm" variant="danger" v-if="canNotLike(current_share)" @click="iLikeItd(current_share.id, false)">不感兴趣</b-button>
+                    <b-button size="sm" variant="success" v-if="current_share.status === 2 && !current_share.current_user_join" @click="iJoinItd(current_share.id, true)">参加</b-button>
+                    <b-button size="sm" variant="danger" v-if="current_share.status === 2 && current_share.current_user_join" @click="iJoinItd(current_share.id, false)">不参加了</b-button>
+                </div>
             </b-modal>
         </b-col>
     </b-row>
@@ -179,6 +207,7 @@ export default {
                 createPlanForm: {
                     share_date: '',
                     share_time: '',
+                    share_room: '',
                     plan_duration: 0,
                 },
                 // 完成分享表单
@@ -188,24 +217,36 @@ export default {
                     attachments: [],
                 },
                 // 分享详情
-                shareDetail: {share: {}, plan: {},},
+                shareDetail: {share: {}, plan: {}, like_users: [], join_users: []},
                 // 搜索表单
                 search: {
                     status: this.QueryArgs(this.$route, 'status'),
+                    type: this.QueryArgs(this.$route, 'type'),
                 },
                 // 分享状态选项列表
                 status_options: [
                     {value: 0, text: '所有状态'},
-                    {value: 1, text: '投票中'},
-                    {value: 2, text: '已排期'},
+                    {value: 1, text: '意向收集'},
+                    {value: 2, text: '报名'},
                     {value: 3, text: '已完成'},
                 ],
                 // 分享主题类型选项列表
                 subject_type_options: [
-                    {value: '算法', text: '算法'},
+                    {value: '算法&数据结构', text: '算法&数据结构'},
                     {value: '机器学习', text: '机器学习'},
                     {value: '分布式系统', text: '分布式系统'},
+                    {value: '架构', text: '架构'},
                     {value: '数据库', text: '数据库'},
+                    {value: '沟通的艺术', text: '沟通的艺术'},
+                    {value: '职业规划', text: '职业规划'},
+                    {value: '前端', text: '前端'},
+                    {value: '编程语言', text: '编程语言'},
+                    {value: '技术框架', text: '技术框架'},
+                    {value: '产品', text: '产品'},
+                    {value: 'UI设计&交互', text: 'UI设计&交互'},
+                    {value: '大数据', text: '大数据'},
+                    {value: '技术方案', text: '技术方案'},
+                    {value: '其它', text: '其它'},
                 ],
                 // 预计分享时长选项列表
                 plan_duration_options: [
@@ -218,13 +259,10 @@ export default {
                 ],
                 // 分享列表
                 shares_fields: [
-                    {key: 'id', label: 'ID'},
                     {key: 'subject', label: '主题'},
-                    {key: 'subject_type', label: '分享类型'},
                     {key: 'share_user', label: '分享人'},
-                    {key: 'votes', label: '票数'},
                     {key: 'status', label: '状态'},
-                    {key: 'created_at', label: '创建时间'},
+                    {key: 'share_at', label: '分享计划'},
                     {key: 'opt', label: '操作'},
                 ],
                 shares: [],
@@ -246,6 +284,8 @@ export default {
                     paused: '暂停中',
                     waiting: '等待中',
                 },
+                // 随机样式map
+                randomStyleMap: {},
             };
         },
         computed: {
@@ -256,23 +296,73 @@ export default {
 
                 return '分享计划：' + this.current_share.subject;
             },
+            subjectTypeFilterOptions() {
+                let items = [{value: '', text: '所有类型'}];
+                items.push(...this.subject_type_options);
+                return items;
+            },
         },
         watch: {
             '$route': 'reload',
             'current_page': 'reload',
         },
         methods: {
+            // 当前页面动作类型
+            action() {
+                return this.QueryArgs(this.$route, 'act');
+            },
+            // 时间格式化
+            dateFormat(d) {
+                return moment(d).format('YYYY-MM-DD HH:mm:ss');
+            },
+            // 随机样式生成
+            randomStyle(key) {
+                if (this.randomStyleMap[key] === undefined) {
+                    let items = ['primary', 'success', 'danger', 'warning', 'secondary', '', 'dark', 'light', 'info'];
+                    this.randomStyleMap[key] = items[Math.floor(Math.random() * items.length)];
+                }
+
+                return this.randomStyleMap[key];
+            },
+            // 分享列表样式
+            sharesRowClass(item) {
+                if (item.status == 2) {
+                    return 'table-success';
+                }
+
+                return '';
+            },
             // 文件上传失败
             fileUploadFailed(rootFile, file, message) {
                 this.ToastError('文件上传失败：' + message);
+            },
+            // 状态人数
+            voteCountSelector(share) {
+                switch (share.status) {
+                    case 1:
+                        return share.like_count;
+                    case 2:
+                        return share.join_count;
+                    default:
+                        return share.join_count;
+                }
             },
             // 分享搜索
             searchSubmit(evt) {
                 evt.preventDefault();
 
-                this.$router.push({path: '/', query: {
-                    status: this.search.status,
-                }}).catch(err => {this.ToastError(err);});
+                let query = {};
+                for (let i in this.$route.query) {
+                    query[i] = this.$route.query[i];
+                }
+                for (let i in this.search) {
+                    query[i] = this.search[i];
+                }
+
+                delete query.page;
+                delete query.per_page;
+                
+                this.$router.push({path: '/', query: query}).catch(err => {this.ToastError(err);});
             },
             // 预览分享详情
             previewShare(share) {
@@ -284,7 +374,7 @@ export default {
             },
             // 创建分享
             createShare() {
-                axios.post('/api/shares/', this.createForm).then(response => {
+                axios.post('/api/shares/', this.createForm).then(() => {
                     this.$root.$emit('bv::hide::modal', 'create-share-dialog');
                     this.SuccessBox('创建成功');
                     this.reload();
@@ -301,15 +391,16 @@ export default {
                 params.share_at = moment(this.createPlanForm.share_date + ' ' + this.createPlanForm.share_time, 'YYYY-MM-DD hh:mm:ss').format();
                 params.plan_duration = parseInt(this.createPlanForm.plan_duration);
                 params.note = this.createPlanForm.note;
+                params.share_room  = this.createPlanForm.share_room;
 
-                axios.post('/api/shares/' + this.current_share.id + '/plan', params).then(response => {
+                axios.post('/api/shares/' + this.current_share.id + '/plan', params).then(() => {
                     this.$root.$emit('bv::hide::modal', 'create-share-plan-dialog');
                     this.SuccessBox('操作成功');
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)});
             },
             cancelSharePlan(share) {
-                axios.delete('/api/shares/' + share.id + '/plan').then(response => { 
+                axios.delete('/api/shares/' + share.id + '/plan').then(() => { 
                     this.SuccessBox('操作成功');
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)});
@@ -329,7 +420,7 @@ export default {
                    params.attachments.push(JSON.parse(this.$refs.uploader.uploader.files[i].chunks[0].processedState.res).id);
                 }
 
-                axios.post('/api/shares/' + this.current_share.id + '/finish/', params).then(response => {
+                axios.post('/api/shares/' + this.current_share.id + '/finish/', params).then(() => {
                     this.$root.$emit('bv::hide::modal', 'finish-share-plan-dialog');
                     this.SuccessBox('操作成功');
                     this.reload();
@@ -370,7 +461,7 @@ export default {
             },
             iLikeIt(shareId, like, success) {
                 success = success || function() {};
-                axios[like ? 'post':'delete']('/api/shares/' + shareId + '/like/').then(response => {
+                axios[like ? 'post':'delete']('/api/shares/' + shareId + '/like/').then(() => {
                     success();
                     this.ToastSuccess('操作成功');
                     this.reload();
@@ -378,7 +469,7 @@ export default {
             },
             iJoinIt(shareId, join, success) {
                 success = success || function() {};
-                axios[join ? 'post':'delete']('/api/shares/' + shareId + '/join/').then(response => {
+                axios[join ? 'post':'delete']('/api/shares/' + shareId + '/join/').then(() => {
                     success();
                     this.ToastSuccess('操作成功');
                     this.reload();
@@ -388,20 +479,30 @@ export default {
             statusText(id) {
                 switch (id) {
                 case 1:
-                    return '投票中';
+                    return {text: '意向收集', class: 'text-warning'};
                 case 2: 
-                    return '已排期';
+                    return {text: '报名', class: 'text-success'};
                 case 3: 
-                    return '已完成';
+                    return {text: '已完成', class: ''};
                 default: 
-                    return '未知';
+                    return {text: '未知', class: ''};
                 }
             },
             // 页面刷新
             reload() {
+                let sharesEndpoint = '/api/shares/';
+                switch (this.action()) {
+                case 'my':
+                    sharesEndpoint = '/api/shares/my/';
+                    break;
+                case 'recently':
+                    sharesEndpoint = '/api/shares/recently/';
+                    break;
+                }
+
                 let params = this.$route.query;
                 params.page = this.current_page;
-                axios.get('/api/shares/', {
+                axios.get(sharesEndpoint, {
                     params: params,
                 }).then(response => {
                     let shares = response.data.data;
@@ -420,8 +521,6 @@ export default {
                     this.shares = shares;
                     this.page = response.data.page;
                     this.current_page = this.page.page;
-
-                    this.isBusy = false;
                 }).catch(error => {
                     this.ToastError(error)
                 });

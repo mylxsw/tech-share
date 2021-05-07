@@ -6,7 +6,9 @@
             <b-collapse is-nav id="nav_dropdown_collapse">
                 <ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex"></ul>
                 <b-navbar-nav>
-                    <b-nav-item href="/" exact v-if="isLogon()">分享列表</b-nav-item>
+                    <b-nav-item href="/#/?act=" exact v-if="isLogon()">所有分享</b-nav-item>
+                    <b-nav-item href="/#/?act=recently" exact v-if="isLogon()">最新分享</b-nav-item>
+                    <b-nav-item href="/#/?act=my" exact v-if="isLogon()">我发起的</b-nav-item>
                     <b-nav-item @click="logout()" v-if="isLogon()">退出</b-nav-item>
                 </b-navbar-nav>
             </b-collapse>
@@ -33,7 +35,7 @@
                 return this.$store.getters.user != null && this.$store.getters.user.id > 0;
             },
             logout() {
-                axios.post('/api/auth/logout').then(response => {
+                axios.post('/api/auth/logout').then(() => {
                     this.$store.commit('removeUser');
                     window.location.reload();
                 }).catch(err => {this.ErrorBox(err)});

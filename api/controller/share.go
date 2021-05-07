@@ -25,6 +25,7 @@ func (ctl ShareController) Register(router web.Router) {
 	router.Group("shares/", func(router web.Router) {
 		router.Get("/", ctl.Shares)
 		router.Get("/my/", ctl.MyShares)
+		router.Get("/recently/", ctl.RecentlyShares)
 		router.Get("/{id:[0-9]+}/", ctl.Share)
 		router.Post("/", ctl.CreateShare)
 		router.Post("/{id:[0-9]+}/", ctl.UpdateShare)
@@ -44,29 +45,69 @@ func (ctl ShareController) Register(router web.Router) {
 	})
 }
 
+// RecentlyShares return all shares recently
+//   - status: 0 所有 1/2/3 基于状态筛选
+//   - type: 分享类型
+func (ctl ShareController) RecentlyShares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
+	filter := service.ShareFilter{
+		Statuses: []int8{service.ShareStatusPlaned, service.ShareStatusVoting},
+		Type:     req.Input("type"),
+	}
+
+	return ctl.getShares(context.TODO(), shareSrv, filter, true, req.Int64Input("page", 1), req.Int64Input("per_page", 20), currentUser(req).Id)
+}
+
 // Shares return all shares
 //   - status: 0 所有 1/2/3 基于状态筛选
 //   - creator: 基于创建人筛选 0 - 所有人
+//   - type: 分享类型
 func (ctl ShareController) Shares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
-	page := req.Int64Input("page", 1)
-	perPage := req.Int64Input("per_page", 20)
-
-	status := req.Int64Input("status", 0)
-	creator := req.Int64Input("creator", 0)
-
 	filter := service.ShareFilter{
-		Status:  int8(status),
-		Creator: creator,
+		Statuses: statusFilter(req),
+		Creator:  req.Int64Input("creator", 0),
+		Type:     req.Input("type"),
 	}
-	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, page, perPage)
+
+	return ctl.getShares(context.TODO(), shareSrv, filter, false, req.Int64Input("page", 1), req.Int64Input("per_page", 20), currentUser(req).Id)
+}
+
+func statusFilter(req web.Request) []int8 {
+	status := int8(req.Int64Input("status", 0))
+	if status <= 0 {
+		return []int8{}
+	}
+
+	return []int8{status}
+}
+
+type SharesExtra struct {
+	UserLikeOrJoin map[int64]service.UserLikeOrJoinShare `json:"user_like_or_join"`
+}
+
+// MyShares return all shares for current user
+//   - status: 0 所有 1/2/3 基于状态筛选
+//   - type: 分享类型
+func (ctl ShareController) MyShares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
+	currentUserID := currentUser(req).Id
+	filter := service.ShareFilter{
+		Statuses: statusFilter(req),
+		Creator:  currentUserID,
+		Type:     req.Input("type"),
+	}
+
+	return ctl.getShares(context.TODO(), shareSrv, filter, false, req.Int64Input("page", 1), req.Int64Input("per_page", 20), currentUserID)
+}
+
+func (ctl ShareController) getShares(ctx context.Context, shareSrv service.ShareService, filter service.ShareFilter, sortDesc bool, page, perPage int64, currentUserID int64) (*PaginateRes, error) {
+	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, sortDesc, page, perPage)
 	if err != nil {
 		return nil, err
 	}
 
 	var shareIDs []int64
-	_ = coll.Map(shares, &shareIDs, func(s service.Share) int64 { return s.Id })
+	_ = coll.Map(shares, &shareIDs, func(s service.ShareExt) int64 { return s.Id })
 
-	userLikeOrJoinShares, err := shareSrv.IsUserLikeOrJoinShares(context.TODO(), currentUser(req).Id, shareIDs)
+	userLikeOrJoinShares, err := shareSrv.IsUserLikeOrJoinShares(context.TODO(), currentUserID, shareIDs)
 	if err != nil {
 		log.Errorf("query user_like_or_join_shares failed: %v", err)
 	}
@@ -78,44 +119,21 @@ func (ctl ShareController) Shares(ctx web.Context, req web.Request, shareSrv ser
 			UserLikeOrJoin: userLikeOrJoinShares,
 		},
 		Search: map[string]interface{}{
-			"status":   status,
-			"creator":  creator,
+			"status":   returnStatusFilter(filter),
+			"type":     filter.Type,
+			"creator":  filter.Creator,
 			"page":     page,
 			"per_page": perPage,
 		},
 	}, nil
 }
 
-type SharesExtra struct {
-	UserLikeOrJoin map[int64]service.UserLikeOrJoinShare `json:"user_like_or_join"`
-}
-
-// MyShares return all shares for current user
-//   - status: 0 所有 1/2/3 基于状态筛选
-func (ctl ShareController) MyShares(ctx web.Context, req web.Request, shareSrv service.ShareService) (*PaginateRes, error) {
-	page := req.Int64Input("page", 1)
-	perPage := req.Int64Input("per_page", 20)
-
-	status := req.Int64Input("status", 0)
-
-	filter := service.ShareFilter{
-		Status:  int8(status),
-		Creator: currentUser(req).Id,
-	}
-	shares, meta, err := shareSrv.GetShares(context.TODO(), filter, page, perPage)
-	if err != nil {
-		return nil, err
+func returnStatusFilter(filter service.ShareFilter) int8 {
+	if len(filter.Statuses) == 0 {
+		return 0
 	}
 
-	return &PaginateRes{
-		Page: meta,
-		Data: shares,
-		Search: map[string]interface{}{
-			"status":   status,
-			"page":     page,
-			"per_page": perPage,
-		},
-	}, nil
+	return filter.Statuses[0]
 }
 
 // CreateShare create a share
@@ -162,14 +180,37 @@ func (ctl ShareController) DeleteShare(ctx web.Context, req web.Request, shareSr
 	return err
 }
 
+type ShareDetail struct {
+	service.ShareDetail
+	UserLike bool `json:"user_like"`
+	UserJoin bool `json:"user_join"`
+}
+
 // Share get a share detail
-func (ctl ShareController) Share(ctx web.Context, req web.Request, shareSrv service.ShareService) (*service.ShareDetail, error) {
+func (ctl ShareController) Share(ctx web.Context, req web.Request, shareSrv service.ShareService) (*ShareDetail, error) {
 	id, err := strconv.Atoi(req.PathVar("id"))
 	if err != nil {
 		return nil, err
 	}
 
-	return shareSrv.GetShareByID(context.TODO(), int64(id))
+	res, err := shareSrv.GetShareByID(context.TODO(), int64(id))
+	if err != nil || res == nil {
+		return nil, err
+	}
+
+	detail := ShareDetail{ShareDetail: *res}
+
+	userLikeOrJoinShares, err := shareSrv.IsUserLikeOrJoinShares(context.TODO(), currentUser(req).Id, []int64{res.Share.Id})
+	if err != nil {
+		log.Errorf("query user_like_or_join_shares failed: %v", err)
+	}
+
+	if s, ok := userLikeOrJoinShares[res.Share.Id]; ok {
+		detail.UserLike = s.Like
+		detail.UserJoin = s.Join
+	}
+
+	return &detail, nil
 }
 
 // LikeShare give a vote to a share

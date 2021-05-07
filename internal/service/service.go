@@ -55,6 +55,7 @@ type Plan struct {
 
 type PlanUpdateFields struct {
 	ShareAt      time.Time `json:"share_at" validate:"required"`
+	ShareRoom    string    `json:"share_room"`
 	PlanDuration int64     `json:"plan_duration" validate:"required,gt=0"`
 	Note         string    `json:"note"`
 }
@@ -71,6 +72,13 @@ type Share struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type ShareExt struct {
+	Share
+	ShareAt      time.Time `json:"share_at"`
+	ShareRoom    string    `json:"share_room"`
+	PlanDuration int64     `json:"plan_duration"`
+}
+
 type ShareUpdateFields struct {
 	Subject     string `json:"subject" validate:"required,gte=2"`
 	SubjectType string `json:"subject_type" validate:"required"`
@@ -85,8 +93,9 @@ type ShareFinishFields struct {
 }
 
 type ShareFilter struct {
-	Status  int8  `json:"status"`
-	Creator int64 `json:"creator"`
+	Statuses []int8 `json:"statuses"`
+	Creator  int64  `json:"creator"`
+	Type     string `json:"type"`
 }
 
 type UserLikeOrJoinShare struct {
