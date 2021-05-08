@@ -3,12 +3,15 @@ package controller
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/coll"
+	"github.com/mylxsw/glacier/event"
 	"github.com/mylxsw/glacier/infra"
 	"github.com/mylxsw/glacier/web"
 	"github.com/mylxsw/tech-share/config"
+	event2 "github.com/mylxsw/tech-share/internal/event"
 	"github.com/mylxsw/tech-share/internal/service"
 )
 
@@ -137,7 +140,7 @@ func returnStatusFilter(filter service.ShareFilter) int8 {
 }
 
 // CreateShare create a share
-func (ctl ShareController) CreateShare(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
+func (ctl ShareController) CreateShare(ctx web.Context, req web.Request, shareSrv service.ShareService, pub event.Publisher) error {
 	var share service.ShareUpdateFields
 	if err := req.Unmarshal(&share); err != nil {
 		return err
@@ -147,10 +150,19 @@ func (ctl ShareController) CreateShare(ctx web.Context, req web.Request, shareSr
 		share.ShareUser = currentUser(req).Name
 	}
 
-	_, err := shareSrv.CreateShare(context.TODO(), service.Share{
+	shareID, err := shareSrv.CreateShare(context.TODO(), service.Share{
 		ShareUpdateFields: share,
 		CreateUserId:      currentUser(req).Id,
 	})
+	if err == nil {
+		pub.Publish(event2.ShareCreatedEvent{
+			ShareID:   shareID,
+			Share:     share,
+			Creator:   currentUser(req),
+			CreatedAt: time.Now(),
+		})
+	}
+
 	return err
 }
 
