@@ -105,8 +105,12 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 		return nil, service.NewValidateError(fmt.Errorf("user does not exist or too many entries returned"))
 	}
 
-	if err := l.Bind(sr.Entries[0].DN, password); err != nil {
-		return nil, service.NewValidateError(err)
+	if ctl.conf.WeakPasswordMode {
+		// TODO 弱密码模式
+	} else {
+		if err := l.Bind(sr.Entries[0].DN, password); err != nil {
+			return nil, service.NewValidateError(err)
+		}
 	}
 
 	user, err := userSrv.LoadUser(

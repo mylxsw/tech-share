@@ -11,10 +11,10 @@
                             <b-form-group label="主题类型">
                                 <b-form-input v-model="shareDetail.share.subject_type" type="text" readonly></b-form-input>
                             </b-form-group>
-                            <b-form-group label="内容简介">
+                            <b-form-group label="内容简介" v-if="shareDetail.share.description !== ''">
                                 <b-form-textarea v-model="shareDetail.share.description" rows="4" readonly/>
                             </b-form-group>
-                            <b-form-group label="分享人" >
+                            <b-form-group label="分享人" v-if="shareDetail.share.share_user !== ''">
                                 <b-form-input v-model="shareDetail.share.share_user" type="text" readonly></b-form-input>
                             </b-form-group>
                         </div>
@@ -31,10 +31,10 @@
                         </div>
 
                         <div v-if="shareDetail.plan != null" class="mt-3">
-                            <b-form-group label="分享时间" readonly v-if="shareDetail.plan.share_at != ''">
+                            <b-form-group label="分享时间" readonly v-if="shareDetail.plan.share_at !== ''">
                                 <date-time :value="shareDetail.plan.share_at"></date-time>
                             </b-form-group>
-                            <b-form-group label="分享地点" readonly v-if="shareDetail.plan.share_room != ''">
+                            <b-form-group label="分享地点" readonly v-if="shareDetail.plan.share_room !== ''">
                                 <b-form-input v-model="shareDetail.plan.share_room" type="text" readonly></b-form-input>
                             </b-form-group>
                             <b-form-group label="预计时长" readonly v-if="shareDetail.plan.plan_duration > 0">
@@ -43,7 +43,7 @@
                             <b-form-group label="实际时长" readonly v-if="shareDetail.plan.real_duration > 0">
                                 <b-form-input v-model="shareDetail.plan.real_duration" type="text" readonly></b-form-input>
                             </b-form-group>
-                            <b-form-group label="备注" v-if="shareDetail.plan.note != ''">
+                            <b-form-group label="备注" v-if="shareDetail.plan.note !== ''">
                                 <b-form-textarea v-model="shareDetail.plan.note" rows="4" readonly />
                             </b-form-group>
                         </div>

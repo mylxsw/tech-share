@@ -45,10 +45,9 @@
                             
                             <b-button size="sm" variant="info" v-if="canPlan(row.item)" @click="editShareDialog(row.item)">编辑</b-button>
                             <b-button size="sm" variant="success" v-if="canPlan(row.item)" @click="createSharePlanDialog(row.item)">排期</b-button>
-                            <b-button size="sm" variant="" v-if="canCancelPlan(row.item)" @click="cancelSharePlan(row.item)">取消排期</b-button>
                             <b-button size="sm" variant="info" v-if="canCancelPlan(row.item)" @click="editSharePlanDialog(row.item)">编辑排期</b-button>
                             <b-button size="sm" variant="warning" v-if="canFinishPlan(row.item)" @click="finishShareDialog(row.item)">完结</b-button>
-                            <b-button size="sm" variant="danger" v-if="canDelete(row.item)">删除</b-button>
+                            <b-button size="sm" variant="danger" v-if="canDelete(row.item)" @click="deleteShare(row.item)">删除</b-button>
 
                             <b-button size="sm" variant="primary" v-if="row.item.status === 3" @click="previewShare(row.item)">回看</b-button>
                         </b-button-group>
@@ -113,7 +112,8 @@
                         <b-form-textarea id="note-input" placeholder="Enter note" v-model="createPlanForm.note" rows="3"/>
                     </b-form-group>
 
-                    <b-button type="submit" variant="primary">提交</b-button>
+                    <b-button type="submit" variant="primary">保存</b-button>
+                    <b-button class="ml-2" variant="danger" v-if="canCancelPlan(current_share)" @click="cancelSharePlan(current_share)">取消排期</b-button>
                 </form>
             </b-modal>
             <b-modal id="finish-share-plan-dialog" :title="currentSharePlanTitle" hide-footer size="xl">
@@ -149,10 +149,10 @@
                         <b-form-group label="主题类型">
                             <b-form-select v-model="shareDetail.share.subject_type" :options="subject_type_options" disabled></b-form-select>
                         </b-form-group>
-                        <b-form-group label="内容简介">
+                        <b-form-group label="内容简介" v-if="shareDetail.share.description !== ''">
                             <b-form-textarea v-model="shareDetail.share.description" rows="4" readonly/>
                         </b-form-group>
-                        <b-form-group label="分享人" >
+                        <b-form-group label="分享人" v-if="shareDetail.share.share_user !== ''">
                             <b-form-input v-model="shareDetail.share.share_user" type="text" readonly></b-form-input>
                         </b-form-group>
                     </div>
@@ -169,10 +169,10 @@
                     </div>
 
                     <div v-if="shareDetail.plan != null" class="mt-3">
-                        <b-form-group label="分享时间" readonly v-if="shareDetail.plan.share_at != ''">
+                        <b-form-group label="分享时间" readonly v-if="shareDetail.plan.share_at !== ''">
                             <date-time :value="shareDetail.plan.share_at"></date-time>
                         </b-form-group>
-                        <b-form-group label="分享地点" readonly v-if="shareDetail.plan.share_room != ''">
+                        <b-form-group label="分享地点" readonly v-if="shareDetail.plan.share_room !== ''">
                             <b-form-input v-model="shareDetail.plan.share_room" type="text" readonly></b-form-input>
                         </b-form-group>
                         <b-form-group label="预计时长" readonly v-if="shareDetail.plan.plan_duration > 0">
@@ -181,7 +181,7 @@
                         <b-form-group label="实际时长" readonly v-if="shareDetail.plan.real_duration > 0">
                             <b-form-input v-model="shareDetail.plan.real_duration" type="text" readonly></b-form-input>
                         </b-form-group>
-                        <b-form-group label="备注" v-if="shareDetail.plan.note != ''">
+                        <b-form-group label="备注" v-if="shareDetail.plan.note !== ''">
                             <b-form-textarea v-model="shareDetail.plan.note" rows="4" readonly />
                         </b-form-group>
                     </div>
@@ -468,10 +468,30 @@ export default {
                 }).catch(error => {this.ErrorBox(error)});
             },
             cancelSharePlan(share) {
-                axios.delete('/api/shares/' + share.id + '/plan').then(() => { 
-                    this.ToastSuccess('操作成功');
-                    this.reload();
-                }).catch(error => {this.ErrorBox(error)});
+                this.$bvModal.msgBoxConfirm('确定取消该分享的排期？').then((value) => {
+                    if (value !== true) {
+                      return ;
+                    }
+
+                    axios.delete('/api/shares/' + share.id + '/plan').then(() => {
+                        this.ToastSuccess('操作成功');
+                        this.$root.$emit('bv::hide::modal', 'create-share-plan-dialog');
+                        this.reload();
+                    }).catch(error => {this.ErrorBox(error)});
+                });
+            },
+            // 删除分享
+            deleteShare(share) {
+                this.$bvModal.msgBoxConfirm('确定删除该分享？').then((value) => {
+                    if (value !== true) {
+                        return ;
+                    }
+
+                    axios.delete('/api/shares/' + share.id + '/').then(() => {
+                        this.ToastSuccess('操作成功');
+                        this.reload();
+                    });
+                });
             },
             // 分享完结
             finishShareDialog(share) {
@@ -510,7 +530,7 @@ export default {
                 return share.status === 1 && share.create_user_id == this.$store.getters.user.id;
             },
             canCancelPlan(share) {
-                return share.status === 2 && share.create_user_id == this.$store.getters.user.id;
+                return share != null && share.status === 2 && share.create_user_id == this.$store.getters.user.id;
             },
             // 是否可以完结
             canFinishPlan(share) {

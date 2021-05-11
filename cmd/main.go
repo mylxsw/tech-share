@@ -88,6 +88,11 @@ func main() {
 		EnvVar: "TECH_SHARE_SESSION_KEY",
 		Value:  "49a95f4cdaac9dedbc3298c5f5a7aa83",
 	}))
+	app.AddFlags(altsrc.NewBoolFlag(cli.BoolFlag{
+		Name:   "weak_password_mode",
+		Usage:  "启用弱密码模式，启用该模式后，只使用 LDAP 的账号体系，密码使用本地密码",
+		EnvVar: "TECH_SHARE_WEAK_PASSWORD_MODE",
+	}))
 
 	app.BeforeServerStart(func(cc container.Container) error {
 		stackWriter := writer.NewStackWriter()
@@ -121,14 +126,15 @@ func main() {
 
 	app.Singleton(func(c infra.FlagContext) *config.Config {
 		return &config.Config{
-			Version:     Version,
-			GitCommit:   GitCommit,
-			Listen:      c.String("listen"),
-			Debug:       c.Bool("debug"),
-			LogPath:     c.String("log_path"),
-			DBConnStr:   c.String("db_conn_str"),
-			StoragePath: c.String("storage_path"),
-			SessionKey:  c.String("session_key"),
+			Version:          Version,
+			GitCommit:        GitCommit,
+			Listen:           c.String("listen"),
+			Debug:            c.Bool("debug"),
+			LogPath:          c.String("log_path"),
+			DBConnStr:        c.String("db_conn_str"),
+			StoragePath:      c.String("storage_path"),
+			SessionKey:       c.String("session_key"),
+			WeakPasswordMode: c.Bool("weak_password_mode"),
 			LDAP: config.LDAP{
 				URL:         c.String("ldap_url"),
 				BaseDN:      c.String("ldap_base_dn"),

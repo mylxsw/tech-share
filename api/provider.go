@@ -76,7 +76,7 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 	mws = append(mws,
 		mw.AccessLog(log.Module("api")),
 		mw.CORS("*"),
-		mw.Session(sessions.NewCookieStore([]byte(conf.SessionKey)), "tech-share", nil),
+		mw.Session(sessions.NewCookieStore([]byte(conf.SessionKey)), "tech-share", &sessions.Options{MaxAge: 86400 * 30 * 12}),
 	)
 
 	// 存储在 session 中的对象必须在这里注册，否则无法序列化

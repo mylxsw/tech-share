@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	Listen      string `json:"listen"`
-	Debug       bool   `json:"debug"`
-	LogPath     string `json:"log_path"`
-	Version     string `json:"version"`
-	GitCommit   string `json:"git_commit"`
-	DBConnStr   string `json:"-"`
-	StoragePath string `json:"storage_path"`
-	SessionKey  string `json:"-"`
-	LDAP        LDAP   `json:"ldap"`
+	Listen           string `json:"listen"`
+	Debug            bool   `json:"debug"`
+	LogPath          string `json:"log_path"`
+	Version          string `json:"version"`
+	GitCommit        string `json:"git_commit"`
+	DBConnStr        string `json:"-"`
+	StoragePath      string `json:"storage_path"`
+	SessionKey       string `json:"-"`
+	LDAP             LDAP   `json:"ldap"`
+	WeakPasswordMode bool   `json:"weak_password_mode"`
 }
 
 type LDAP struct {
