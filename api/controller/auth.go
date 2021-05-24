@@ -52,7 +52,7 @@ func (ctl AuthController) Logout(req web.Request) error {
 
 // CurrentUser return current user info
 func (ctl AuthController) CurrentUser(ctx web.Context, req web.Request) *User {
-	if userLogin, ok := req.Session().Values["user_login"]; ok {
+	if userLogin, ok := ctx.Session().Values["user_login"]; ok {
 		user := userLogin.(service.UserInfo)
 		return &User{ID: user.Id, Name: user.Name, UUID: user.Uuid}
 	}

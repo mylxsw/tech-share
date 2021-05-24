@@ -54,7 +54,7 @@
         beforeMount() {
             axios.get('/api/auth/current').then(response => {
                 this.$store.commit('updateUser', response.data);
-            }).catch(err => {this.ToastError(err)})
+            }).catch(() => {})
         }
     }
 </script>

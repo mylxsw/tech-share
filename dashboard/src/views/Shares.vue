@@ -47,6 +47,7 @@
                             <b-button size="sm" variant="success" v-if="canPlan(row.item)" @click="createSharePlanDialog(row.item)">排期</b-button>
                             <b-button size="sm" variant="info" v-if="canCancelPlan(row.item)" @click="editSharePlanDialog(row.item)">编辑排期</b-button>
                             <b-button size="sm" variant="warning" v-if="canFinishPlan(row.item)" @click="finishShareDialog(row.item)">完结</b-button>
+                            <b-button size="sm" variant="warning" v-if="canEditFinishedPlan(row.item)" @click="finishShareDialog(row.item)">编辑</b-button>
                             <b-button size="sm" variant="danger" v-if="canDelete(row.item)" @click="deleteShare(row.item)">删除</b-button>
 
                             <b-button size="sm" variant="primary" v-if="row.item.status === 3" @click="previewShare(row.item)">回看</b-button>
@@ -122,6 +123,17 @@
                         <b-form-select v-model="finishShareForm.real_duration" :options="plan_duration_options"></b-form-select>
                     </b-form-group>
 
+                    <b-form-group label="已上传附件" v-if="finishShareForm.oldAttachments != null && finishShareForm.oldAttachments.length > 0">
+                        <b-table :items="finishShareForm.oldAttachments" :fields="atta_fields">
+                            <template v-slot:cell(opt)="row">
+                                <b-button variant="danger" @click="deleteAttachments(row.index)">删除</b-button>
+                            </template>
+                            <template v-slot:cell(atta_name)="row">
+                                <a :href="'/storage/' + row.item.atta_path" target="_blank">{{ row.item.name }}</a>
+                            </template>
+                        </b-table>
+                    </b-form-group>
+
                     <b-form-group id="attachment-upload-group" label="附件上传" label-for="attachment-upload-input">
                         <uploader :options="uploaderOptions" ref="uploader" :file-status-text="uploaderStatusText" @file-error="fileUploadFailed">
                             <uploader-unspport></uploader-unspport>
@@ -187,6 +199,11 @@
                     </div>
 
                     <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null" class="mt-3">
+                        <b-form-group label="图片附件预览" v-if="imageFilter(shareDetail.attachments).length > 0">
+                            <div v-for="(atta, index) in imageFilter(shareDetail.attachments)" :key="index" class="image-preview-box">
+                                <img :src="'/storage/' + atta.atta_path" :title="atta.name">
+                            </div>
+                        </b-form-group>
                         <b-form-group label="附件">
                             <li v-for="(atta, index) in shareDetail.attachments" :key="index">
                                 <a :href="'/storage/' + atta.atta_path" target="_blank">{{ atta.name }}</a>
@@ -291,6 +308,11 @@ export default {
                 },
                 // 随机样式map
                 randomStyleMap: {},
+                // 附件编辑表头
+                atta_fields: [
+                    {key: 'atta_name', label: '名称'},
+                    {key: 'opt', label: '操作'},
+                ],
             };
         },
         computed: {
@@ -340,6 +362,7 @@ export default {
                 return {
                     real_duration: 0,
                     note: '',
+                    oldAttachments: [],
                     attachments: [],
                 };
             },
@@ -493,16 +516,40 @@ export default {
                     });
                 });
             },
+            // 删除附件
+            deleteAttachments(idx) {
+                this.$bvModal.msgBoxConfirm('确定删除该附件？').then((value) => {
+                    if (value !== true) {
+                        return;
+                    }
+
+                    this.finishShareForm.oldAttachments.splice(idx, 1);
+                });
+            },
             // 分享完结
             finishShareDialog(share) {
                 this.current_share = share;
-                this.$root.$emit('bv::show::modal', 'finish-share-plan-dialog');
+                this.finishShareForm = this.initFinishShareForm();
+                axios.get('/api/shares/' + share.id + '/').then(response => {
+                    this.finishShareForm.real_duration = response.data.plan.real_duration;
+                    this.finishShareForm.oldAttachments = response.data.attachments;
+                    this.finishShareForm.attachments = response.data.share.attachments.split(",");
+                    this.finishShareForm.note = response.data.plan.note;
+
+                    this.$root.$emit('bv::show::modal', 'finish-share-plan-dialog');
+                }).catch(error => {this.ErrorBox(error)});
+                
             },
             finishShare() {
                 let params = {};
                 params.real_duration = parseInt(this.finishShareForm.real_duration);
                 params.note = this.finishShareForm.note;
                 params.attachments = [];
+
+                for (let i in this.finishShareForm.oldAttachments) {
+                    params.attachments.push(this.finishShareForm.oldAttachments[i].id);
+                }
+
                 for (let i in this.$refs.uploader.uploader.files) {
                    if (this.$refs.uploader.uploader.files[i].chunks[0] === undefined) { continue; }
                    params.attachments.push(JSON.parse(this.$refs.uploader.uploader.files[i].chunks[0].processedState.res).id);
@@ -535,6 +582,10 @@ export default {
             // 是否可以完结
             canFinishPlan(share) {
                 return share.status === 2 && share.create_user_id == this.$store.getters.user.id;
+            },
+            // 是否可以编辑已经完结的分享
+            canEditFinishedPlan(share) {
+                return share.status === 3 && share.create_user_id == this.$store.getters.user.id;
             },
             // 喜欢or参加分享
             iLikeItd(shareId, like) {
@@ -575,6 +626,26 @@ export default {
                 default: 
                     return {text: '未知', class: ''};
                 }
+            },
+            // 图片过滤
+            imageFilter(attachments) {
+                let results = [];
+                for (let i in attachments) {
+                    if (this.strIn(attachments[i].atta_type, ["jpg", "jpeg", "png", "gif", "bmp", "svg"])) {
+                        results.push(attachments[i]);
+                    }
+                }
+
+                return results;
+            },
+            strIn(str, arr) {
+                for (let i in arr) {
+                    if (arr[i].toLowerCase() === str.toLowerCase()) {
+                        return true;
+                    }
+                }
+
+                return false;
             },
             // 页面刷新
             reload() {
@@ -621,3 +692,12 @@ export default {
         }
     }
 </script>
+
+<style scoped>
+.image-preview-box img {
+    max-width: 600px;
+    max-height: 600px;
+    border: 10px solid #fff;
+    margin-bottom: 10px;
+}
+</style>

@@ -182,6 +182,7 @@ func main() {
 			builder.Text("note").Nullable(true).Comment("备注")
 			builder.Integer("like_count", false, true).Default(migrate.RawExpr("0")).Comment("感兴趣人数")
 			builder.Integer("join_count", false, true).Default(migrate.RawExpr("0")).Comment("参加人数")
+			builder.String("attachments", 255).Default(migrate.RawExpr("")).Nullable(true).Comment("相关附件id列表，多个使用英文逗号分隔")
 			builder.Timestamps(0)
 			builder.SoftDeletes("deleted_at", 0)
 		})
@@ -209,7 +210,6 @@ func main() {
 		})
 		m.Schema("202104222325").Create("attachment", func(builder *migrate.Builder) {
 			builder.Increments("id")
-			builder.Integer("share_id", false, true).Default(migrate.RawExpr("0")).Comment("分享id")
 			builder.String("name", 255).Nullable(true).Comment("附件名称")
 			builder.String("atta_type", 20).Nullable(true).Comment("附件类型")
 			builder.String("atta_path", 255).Nullable(true).Comment("附件地址")

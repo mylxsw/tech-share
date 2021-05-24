@@ -76,14 +76,14 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 	mws = append(mws,
 		mw.AccessLog(log.Module("api")),
 		mw.CORS("*"),
-		mw.Session(sessions.NewCookieStore([]byte(conf.SessionKey)), "tech-share", &sessions.Options{MaxAge: 86400 * 30 * 12}),
+		mw.Session(sessions.NewCookieStore([]byte(conf.SessionKey)), "tech-share", &sessions.Options{MaxAge: 86400 * 30 * 12, Path: "/"}),
 	)
 
 	// 存储在 session 中的对象必须在这里注册，否则无法序列化
 	gob.Register(service.UserInfo{})
 
 	authMW := mw.BeforeInterceptor(func(ctx web.Context) web.Response {
-		if str.HasPrefixes(ctx.CurrentRoute().GetName(), []string{"auth:", "inspect:"}) {
+		if str.HasPrefixes(ctx.CurrentRoute().GetName(), []string{"auth:login", "inspect:"}) {
 			return nil
 		}
 

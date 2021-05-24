@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"database/sql"
+	"strconv"
+	"strings"
 
 	"github.com/jinzhu/copier"
 	"github.com/mylxsw/coll"
@@ -27,8 +29,18 @@ type attachmentService struct {
 	cc infra.Resolver
 }
 
-func (p attachmentService) GetByShareID(ctx context.Context, shareID int64) ([]Attachment, error) {
-	attas, err := model.NewAttachmentModel(p.db).Get(query.Builder().Where(model.AttachmentFieldShareId, shareID))
+func getAttachmentsByShare(ctx context.Context, db *sql.DB, share model.Share) ([]Attachment, error) {
+	if share.Attachments.ValueOrZero() == "" {
+		return []Attachment{}, nil
+	}
+
+	var attaIDs []int64
+	_ = coll.MustNew(strings.Split(share.Attachments.ValueOrZero(), ",")).
+		Map(func(s string) string { return strings.TrimSpace(s) }).
+		Filter(func(s string) bool { return s != "" }).
+		Map(func(s string) int64 { res, _ := strconv.Atoi(s); return int64(res) }).All(&attaIDs)
+
+	attas, err := model.NewAttachmentModel(db).Get(query.Builder().WhereIn(model.AttachmentFieldId, sliceToInterface(attaIDs)...))
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +54,15 @@ func (p attachmentService) GetByShareID(ctx context.Context, shareID int64) ([]A
 	})
 
 	return res, nil
+}
+
+func (p attachmentService) GetByShareID(ctx context.Context, shareID int64) ([]Attachment, error) {
+	share, err := model.NewShareModel(p.db).First(query.Builder().Where(model.ShareFieldId, shareID))
+	if err != nil {
+		return nil, err
+	}
+
+	return getAttachmentsByShare(ctx, p.db, share)
 }
 
 func (p attachmentService) GetByID(ctx context.Context, id int64) (*Attachment, error) {
@@ -64,7 +85,6 @@ func (p attachmentService) CreateAttachment(ctx context.Context, atta Attachment
 		attaP.ToAttachment(str.Exclude(
 			model.AttachmentFields(),
 			model.AttachmentFieldId,
-			model.AttachmentFieldShareId,
 			model.AttachmentFieldCreatedAt,
 		)...))
 }

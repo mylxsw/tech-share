@@ -5,8 +5,6 @@ models:
   relations:
     - model: share_plan
       rel: hasOne
-    - model: attachment
-      rel: hasMany
     - model: share_user_rel
       rel: hasMany
   definition:
@@ -32,3 +30,5 @@ models:
       type: int64
     - name: join_count
       type: int64
+    - name: attachments
+      type: string

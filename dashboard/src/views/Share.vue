@@ -49,6 +49,11 @@
                         </div>
 
                         <div v-if="shareDetail.attachments != null && shareDetail.attachments.length > 0 && shareDetail.plan != null" class="mt-3">
+                            <b-form-group label="图片附件预览" v-if="imageFilter(shareDetail.attachments).length > 0">
+                                <div v-for="(atta, index) in imageFilter(shareDetail.attachments)" :key="index" class="image-preview-box">
+                                    <img :src="'/storage/' + atta.atta_path" :title="atta.name">
+                                </div>
+                            </b-form-group>
                             <b-form-group label="附件">
                                 <li v-for="(atta, index) in shareDetail.attachments" :key="index">
                                     <a :href="'/storage/' + atta.atta_path" target="_blank">{{ atta.name }}</a>
@@ -115,7 +120,26 @@ export default {
                     this.reload();
                 }).catch(error => {this.ErrorBox(error)})
             },
-        
+            // 图片过滤
+            imageFilter(attachments) {
+                let results = [];
+                for (let i in attachments) {
+                    if (this.strIn(attachments[i].atta_type, ["jpg", "jpeg", "png", "gif", "bmp", "svg"])) {
+                        results.push(attachments[i]);
+                    }
+                }
+
+                return results;
+            },
+            strIn(str, arr) {
+                for (let i in arr) {
+                    if (arr[i].toLowerCase() === str.toLowerCase()) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
             // 页面刷新
             reload() {
                 axios.get('/api/shares/' + this.$route.query.id + '/').then(response => {
@@ -128,3 +152,12 @@ export default {
         }
     }
 </script>
+
+<style scoped>
+.image-preview-box img {
+    max-width: 600px;
+    max-height: 600px;
+    border: 10px solid #fff;
+    margin-bottom: 10px;
+}
+</style>

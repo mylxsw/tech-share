@@ -67,6 +67,7 @@ type Share struct {
 	Note         string    `json:"note"`
 	LikeCount    int64     `json:"like_count" validate:"gte=0"`
 	JoinCount    int64     `json:"join_count" validate:"gte=0"`
+	Attachments  string    `json:"attachments"`
 	CreateUserId int64     `json:"create_user_id"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

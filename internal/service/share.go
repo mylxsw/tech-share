@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/go-playground/validator"
 	"github.com/jinzhu/copier"
+	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/coll"
 	"github.com/mylxsw/eloquent"
 	"github.com/mylxsw/eloquent/query"
@@ -67,13 +70,13 @@ func (p shareService) GetShareByID(ctx context.Context, id int64) (*ShareDetail,
 		_ = copier.Copy(res.Plan, plan.ToSharePlanPlain())
 	}
 
-	if attas, err := share.Attachments().Get(); err == nil {
-		_ = coll.MustNew(attas).Map(func(atta model.Attachment) Attachment {
-			var local Attachment
-			_ = copier.Copy(&local, atta.ToAttachmentPlain())
+	if share.Attachments.ValueOrZero() != "" {
+		attachments, err := getAttachmentsByShare(ctx, p.db, share)
+		if err != nil {
+			log.With(share).Errorf("query attachments for share failed: %v", err)
+		}
 
-			return local
-		}).All(&res.Attachments)
+		res.Attachments = attachments
 	}
 
 	rawSQL := `SELECT rel.user_id, rel.rel_type, user.name FROM share_user_rel rel LEFT JOIN user user ON user.id = rel.user_id WHERE rel.share_id=?`
@@ -115,12 +118,17 @@ func (p shareService) FinishShare(ctx context.Context, shareID int64, sf ShareFi
 			return NewValidateError(fmt.Errorf("the share can not be finished, you need create a plan first"))
 		}
 
-		if int8(share.Status.ValueOrZero()) == ShareStatusFinished {
-			return nil
-		}
+		// if int8(share.Status.ValueOrZero()) == ShareStatusFinished {
+		// 	return nil
+		// }
 
 		share.Status = null.IntFrom(int64(ShareStatusFinished))
-		if err := share.Save(model.ShareFieldStatus); err != nil {
+
+		var attas []string
+		_ = coll.MustNew(sf.Attachments).Map(func(val int64) string { return strconv.Itoa(int(val)) }).All(&attas)
+
+		share.Attachments = null.StringFrom(strings.Join(attas, ","))
+		if err := share.Save(model.ShareFieldStatus, model.ShareFieldAttachments); err != nil {
 			return err
 		}
 
@@ -130,20 +138,9 @@ func (p shareService) FinishShare(ctx context.Context, shareID int64, sf ShareFi
 		}
 
 		plan.RealDuration = null.IntFrom(sf.RealDuration)
-		plan.Note = null.StringFrom(fmt.Sprintf("%s\n%s", plan.Note.ValueOrZero(), sf.Note))
+		plan.Note = null.StringFrom(sf.Note)
 		if err := plan.Save(model.SharePlanFieldRealDuration, model.SharePlanFieldNote); err != nil {
 			return err
-		}
-
-		if len(sf.Attachments) > 0 {
-			var attaIDs []interface{}
-			_ = coll.Map(sf.Attachments, &attaIDs, func(attaID int64) interface{} { return attaID })
-			if _, err := model.NewAttachmentModel(tx).UpdateFields(
-				query.KV{model.AttachmentFieldShareId: shareID},
-				query.Builder().WhereIn(model.AttachmentFieldId, attaIDs...).Where(model.AttachmentFieldShareId, 0),
-			); err != nil {
-				return err
-			}
 		}
 
 		ok = true

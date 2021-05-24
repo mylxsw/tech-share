@@ -22,7 +22,6 @@ type Attachment struct {
 	attachmentModel *AttachmentModel
 
 	Id        null.Int
-	ShareId   null.Int
 	Name      null.String
 	AttaType  null.String
 	AttaPath  null.String
@@ -43,7 +42,6 @@ func (inst *Attachment) SetModel(attachmentModel *AttachmentModel) {
 // attachmentOriginal is an object which stores original Attachment from database
 type attachmentOriginal struct {
 	Id        null.Int
-	ShareId   null.Int
 	Name      null.String
 	AttaType  null.String
 	AttaPath  null.String
@@ -59,9 +57,6 @@ func (inst *Attachment) Staled(onlyFields ...string) bool {
 	if len(onlyFields) == 0 {
 
 		if inst.Id != inst.original.Id {
-			return true
-		}
-		if inst.ShareId != inst.original.ShareId {
 			return true
 		}
 		if inst.Name != inst.original.Name {
@@ -82,10 +77,6 @@ func (inst *Attachment) Staled(onlyFields ...string) bool {
 
 			case "id":
 				if inst.Id != inst.original.Id {
-					return true
-				}
-			case "share_id":
-				if inst.ShareId != inst.original.ShareId {
 					return true
 				}
 			case "name":
@@ -125,9 +116,6 @@ func (inst *Attachment) StaledKV(onlyFields ...string) query.KV {
 		if inst.Id != inst.original.Id {
 			kv["id"] = inst.Id
 		}
-		if inst.ShareId != inst.original.ShareId {
-			kv["share_id"] = inst.ShareId
-		}
 		if inst.Name != inst.original.Name {
 			kv["name"] = inst.Name
 		}
@@ -147,10 +135,6 @@ func (inst *Attachment) StaledKV(onlyFields ...string) query.KV {
 			case "id":
 				if inst.Id != inst.original.Id {
 					kv["id"] = inst.Id
-				}
-			case "share_id":
-				if inst.ShareId != inst.original.ShareId {
-					kv["share_id"] = inst.ShareId
 				}
 			case "name":
 				if inst.Name != inst.original.Name {
@@ -211,56 +195,6 @@ func (inst *Attachment) String() string {
 	return string(rs)
 }
 
-func (inst *Attachment) Share() *AttachmentBelongsToShareRel {
-	return &AttachmentBelongsToShareRel{
-		source:   inst,
-		relModel: NewShareModel(inst.attachmentModel.GetDB()),
-	}
-}
-
-type AttachmentBelongsToShareRel struct {
-	source   *Attachment
-	relModel *ShareModel
-}
-
-func (rel *AttachmentBelongsToShareRel) Create(target Share) (int64, error) {
-	targetId, err := rel.relModel.Save(target)
-	if err != nil {
-		return 0, err
-	}
-
-	target.Id = null.IntFrom(targetId)
-
-	rel.source.ShareId = target.Id
-	if err := rel.source.Save(); err != nil {
-		return targetId, err
-	}
-
-	return targetId, nil
-}
-
-func (rel *AttachmentBelongsToShareRel) Exists(builders ...query.SQLBuilder) (bool, error) {
-	builder := query.Builder().Where("id", rel.source.ShareId).Merge(builders...)
-
-	return rel.relModel.Exists(builder)
-}
-
-func (rel *AttachmentBelongsToShareRel) First(builders ...query.SQLBuilder) (Share, error) {
-	builder := query.Builder().Where("id", rel.source.ShareId).Limit(1).Merge(builders...)
-
-	return rel.relModel.First(builder)
-}
-
-func (rel *AttachmentBelongsToShareRel) Associate(target Share) error {
-	rel.source.ShareId = target.Id
-	return rel.source.Save()
-}
-
-func (rel *AttachmentBelongsToShareRel) Dissociate() error {
-	rel.source.ShareId = null.IntFrom(0)
-	return rel.source.Save()
-}
-
 type attachmentScope struct {
 	name  string
 	apply func(builder query.Condition)
@@ -318,7 +252,6 @@ func (m *AttachmentModel) globalScopeEnabled(name string) bool {
 
 type AttachmentPlain struct {
 	Id        int64
-	ShareId   int64
 	Name      string
 	AttaType  string
 	AttaPath  string
@@ -330,7 +263,6 @@ func (w AttachmentPlain) ToAttachment(allows ...string) Attachment {
 		return Attachment{
 
 			Id:        null.IntFrom(int64(w.Id)),
-			ShareId:   null.IntFrom(int64(w.ShareId)),
 			Name:      null.StringFrom(w.Name),
 			AttaType:  null.StringFrom(w.AttaType),
 			AttaPath:  null.StringFrom(w.AttaPath),
@@ -344,8 +276,6 @@ func (w AttachmentPlain) ToAttachment(allows ...string) Attachment {
 
 		case "id":
 			res.Id = null.IntFrom(int64(w.Id))
-		case "share_id":
-			res.ShareId = null.IntFrom(int64(w.ShareId))
 		case "name":
 			res.Name = null.StringFrom(w.Name)
 		case "atta_type":
@@ -371,7 +301,6 @@ func (w *Attachment) ToAttachmentPlain() AttachmentPlain {
 	return AttachmentPlain{
 
 		Id:        w.Id.Int64,
-		ShareId:   w.ShareId.Int64,
 		Name:      w.Name.String,
 		AttaType:  w.AttaType.String,
 		AttaPath:  w.AttaPath.String,
@@ -394,7 +323,6 @@ var attachmentTableName = "attachment"
 
 const (
 	AttachmentFieldId        = "id"
-	AttachmentFieldShareId   = "share_id"
 	AttachmentFieldName      = "name"
 	AttachmentFieldAttaType  = "atta_type"
 	AttachmentFieldAttaPath  = "atta_path"
@@ -405,7 +333,6 @@ const (
 func AttachmentFields() []string {
 	return []string{
 		"id",
-		"share_id",
 		"name",
 		"atta_type",
 		"atta_path",
@@ -541,7 +468,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 	if len(b.GetFields()) == 0 {
 		b = b.Select(
 			"id",
-			"share_id",
 			"name",
 			"atta_type",
 			"atta_path",
@@ -556,8 +482,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 		switch strcase.ToSnake(f.Value) {
 
 		case "id":
-			selectFields = append(selectFields, f)
-		case "share_id":
 			selectFields = append(selectFields, f)
 		case "name":
 			selectFields = append(selectFields, f)
@@ -579,8 +503,6 @@ func (m *AttachmentModel) Get(builders ...query.SQLBuilder) ([]Attachment, error
 
 			case "id":
 				scanFields = append(scanFields, &attachmentVar.Id)
-			case "share_id":
-				scanFields = append(scanFields, &attachmentVar.ShareId)
 			case "name":
 				scanFields = append(scanFields, &attachmentVar.Name)
 			case "atta_type":

@@ -5,7 +5,7 @@ LDFLAGS := -s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)
 
 .PHONY: run
 run: build
-	./bin/tech-share --debug
+	./bin/tech-share --debug --weak_password_mode
 
 .PHONY: build
 build: build-orm

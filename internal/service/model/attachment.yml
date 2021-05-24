@@ -2,15 +2,10 @@ package: "model"
 
 models:
 - name: attachment
-  relations:
-    - model: share
-      rel: belongsTo
   definition:
     without_update_time: true
     fields:
     - name: id
-      type: int64
-    - name: share_id
       type: int64
     - name: name
       type: string 
