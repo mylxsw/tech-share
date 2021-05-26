@@ -1,6 +1,11 @@
 package service
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-playground/validator"
+)
 
 type ValidateError struct {
 	err error
@@ -11,7 +16,34 @@ func NewValidateError(err error) *ValidateError {
 }
 
 func (v *ValidateError) Error() string {
+	if errs, ok := v.err.(validator.ValidationErrors); ok {
+		if trans, ok := validateErrorTrans(errs); ok {
+			return fmt.Sprintf("%s: %v", trans, errs)
+		}
+	}
+
 	return v.err.Error()
+}
+
+func validateErrorTrans(errs validator.ValidationErrors) (string, bool) {
+	for _, er := range errs {
+		switch er.Namespace() {
+		case "ShareFinishFields.RealDuration":
+			return "实际分享时长不合法", true
+		case "PlanUpdateFields.ShareAt":
+			return "计划分享时间不合法", true
+		case "PlanUpdateFields.PlanDuration":
+			return "计划分享时长不合法", true
+		case "ShareUpdateFields.Subject":
+			return "分享主题不合法", true
+		case "ShareUpdateFields.SubjectType":
+			return "分享主题类型不合法", true
+		default:
+			return errs.Error(), false
+		}
+	}
+
+	return "", false
 }
 
 const (

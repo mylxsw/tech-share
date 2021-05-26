@@ -27,7 +27,7 @@ func (ctl UserController) Register(router web.Router) {
 func (ctl UserController) CurrentUser(req web.Request) (*User, error) {
 	userLogin, ok := req.Session().Values["user_login"]
 	if !ok {
-		return nil, fmt.Errorf("no user logon")
+		return nil, fmt.Errorf("用户尚未登录")
 	}
 
 	user := userLogin.(service.UserInfo)

@@ -33,7 +33,7 @@ func (ctl UploadController) Register(router web.Router) {
 func (ctl UploadController) Upload(ctx web.Context, req web.Request, attaSrv service.AttachmentService) (*IDRes, error) {
 	uploadFile, err := req.File("file")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("文件上传失败: %w", err)
 	}
 
 	savePath := fmt.Sprintf("%s-%s.%s",
@@ -46,7 +46,7 @@ func (ctl UploadController) Upload(ctx web.Context, req web.Request, attaSrv ser
 	_ = os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 
 	if err := uploadFile.Store(absPath); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("文件存储失败: %w", err)
 	}
 
 	atta := service.Attachment{}
@@ -56,7 +56,7 @@ func (ctl UploadController) Upload(ctx web.Context, req web.Request, attaSrv ser
 
 	id, err := attaSrv.CreateAttachment(context.TODO(), atta)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("文件存储失败: %w", err)
 	}
 
 	return &IDRes{ID: id}, nil

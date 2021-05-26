@@ -66,22 +66,22 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 	password := req.Input("password")
 
 	if userLogin, ok := req.Session().Values["user_login"]; ok {
-		return nil, service.NewValidateError(fmt.Errorf("you has been logon as %s", userLogin.(service.UserInfo).Name))
+		return nil, service.NewValidateError(fmt.Errorf("%s, 你已经登录过了", userLogin.(service.UserInfo).Name))
 	}
 
 	if username == "" || password == "" {
-		return nil, service.NewValidateError(fmt.Errorf("invalid username or password"))
+		return nil, service.NewValidateError(fmt.Errorf("用户名或密码不能为空"))
 	}
 
 	l, err := ldap.DialURL(ctl.conf.LDAP.URL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("无法连接 LDAP 服务器: %w", err)
 	}
 
 	defer l.Close()
 
 	if err := l.Bind(ctl.conf.LDAP.Username, ctl.conf.LDAP.Password); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("LDAP 服务器鉴权失败: %w", err)
 	}
 
 	searchReq := ldap.NewSearchRequest(
@@ -98,18 +98,18 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 
 	sr, err := l.Search(searchReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("LDAP 用户查询失败: %w", err)
 	}
 
 	if len(sr.Entries) != 1 {
-		return nil, service.NewValidateError(fmt.Errorf("user does not exist or too many entries returned"))
+		return nil, service.NewValidateError(fmt.Errorf("用户不存在"))
 	}
 
 	if ctl.conf.WeakPasswordMode {
 		// TODO 弱密码模式
 	} else {
 		if err := l.Bind(sr.Entries[0].DN, password); err != nil {
-			return nil, service.NewValidateError(err)
+			return nil, service.NewValidateError(fmt.Errorf("用户密码错误: %w", err))
 		}
 	}
 
@@ -119,7 +119,7 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 		sr.Entries[0].GetAttributeValue(ctl.conf.LDAP.DisplayName),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("加载用户失败: %w", err)
 	}
 
 	req.Session().Values["user_login"] = *user
