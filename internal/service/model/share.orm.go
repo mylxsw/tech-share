@@ -32,11 +32,13 @@ type Share struct {
 	SubjectType  null.String
 	Status       null.Int
 	ShareUser    null.String
+	ShareUserId  null.Int
 	CreateUserId null.Int
 	Note         null.String
 	LikeCount    null.Int
 	JoinCount    null.Int
 	Attachments  null.String
+	ShareAt      null.Time
 	CreatedAt    null.Time
 	UpdatedAt    null.Time
 	DeletedAt    null.Time
@@ -61,11 +63,13 @@ type shareOriginal struct {
 	SubjectType  null.String
 	Status       null.Int
 	ShareUser    null.String
+	ShareUserId  null.Int
 	CreateUserId null.Int
 	Note         null.String
 	LikeCount    null.Int
 	JoinCount    null.Int
 	Attachments  null.String
+	ShareAt      null.Time
 	CreatedAt    null.Time
 	UpdatedAt    null.Time
 	DeletedAt    null.Time
@@ -97,6 +101,9 @@ func (inst *Share) Staled(onlyFields ...string) bool {
 		if inst.ShareUser != inst.original.ShareUser {
 			return true
 		}
+		if inst.ShareUserId != inst.original.ShareUserId {
+			return true
+		}
 		if inst.CreateUserId != inst.original.CreateUserId {
 			return true
 		}
@@ -110,6 +117,9 @@ func (inst *Share) Staled(onlyFields ...string) bool {
 			return true
 		}
 		if inst.Attachments != inst.original.Attachments {
+			return true
+		}
+		if inst.ShareAt != inst.original.ShareAt {
 			return true
 		}
 		if inst.CreatedAt != inst.original.CreatedAt {
@@ -149,6 +159,10 @@ func (inst *Share) Staled(onlyFields ...string) bool {
 				if inst.ShareUser != inst.original.ShareUser {
 					return true
 				}
+			case "share_user_id":
+				if inst.ShareUserId != inst.original.ShareUserId {
+					return true
+				}
 			case "create_user_id":
 				if inst.CreateUserId != inst.original.CreateUserId {
 					return true
@@ -167,6 +181,10 @@ func (inst *Share) Staled(onlyFields ...string) bool {
 				}
 			case "attachments":
 				if inst.Attachments != inst.original.Attachments {
+					return true
+				}
+			case "share_at":
+				if inst.ShareAt != inst.original.ShareAt {
 					return true
 				}
 			case "created_at":
@@ -217,6 +235,9 @@ func (inst *Share) StaledKV(onlyFields ...string) query.KV {
 		if inst.ShareUser != inst.original.ShareUser {
 			kv["share_user"] = inst.ShareUser
 		}
+		if inst.ShareUserId != inst.original.ShareUserId {
+			kv["share_user_id"] = inst.ShareUserId
+		}
 		if inst.CreateUserId != inst.original.CreateUserId {
 			kv["create_user_id"] = inst.CreateUserId
 		}
@@ -231,6 +252,9 @@ func (inst *Share) StaledKV(onlyFields ...string) query.KV {
 		}
 		if inst.Attachments != inst.original.Attachments {
 			kv["attachments"] = inst.Attachments
+		}
+		if inst.ShareAt != inst.original.ShareAt {
+			kv["share_at"] = inst.ShareAt
 		}
 		if inst.CreatedAt != inst.original.CreatedAt {
 			kv["created_at"] = inst.CreatedAt
@@ -269,6 +293,10 @@ func (inst *Share) StaledKV(onlyFields ...string) query.KV {
 				if inst.ShareUser != inst.original.ShareUser {
 					kv["share_user"] = inst.ShareUser
 				}
+			case "share_user_id":
+				if inst.ShareUserId != inst.original.ShareUserId {
+					kv["share_user_id"] = inst.ShareUserId
+				}
 			case "create_user_id":
 				if inst.CreateUserId != inst.original.CreateUserId {
 					kv["create_user_id"] = inst.CreateUserId
@@ -288,6 +316,10 @@ func (inst *Share) StaledKV(onlyFields ...string) query.KV {
 			case "attachments":
 				if inst.Attachments != inst.original.Attachments {
 					kv["attachments"] = inst.Attachments
+				}
+			case "share_at":
+				if inst.ShareAt != inst.original.ShareAt {
+					kv["share_at"] = inst.ShareAt
 				}
 			case "created_at":
 				if inst.CreatedAt != inst.original.CreatedAt {
@@ -491,11 +523,13 @@ type SharePlain struct {
 	SubjectType  string
 	Status       int8
 	ShareUser    string
+	ShareUserId  int64
 	CreateUserId int64
 	Note         string
 	LikeCount    int64
 	JoinCount    int64
 	Attachments  string
+	ShareAt      time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    time.Time
@@ -511,11 +545,13 @@ func (w SharePlain) ToShare(allows ...string) Share {
 			SubjectType:  null.StringFrom(w.SubjectType),
 			Status:       null.IntFrom(int64(w.Status)),
 			ShareUser:    null.StringFrom(w.ShareUser),
+			ShareUserId:  null.IntFrom(int64(w.ShareUserId)),
 			CreateUserId: null.IntFrom(int64(w.CreateUserId)),
 			Note:         null.StringFrom(w.Note),
 			LikeCount:    null.IntFrom(int64(w.LikeCount)),
 			JoinCount:    null.IntFrom(int64(w.JoinCount)),
 			Attachments:  null.StringFrom(w.Attachments),
+			ShareAt:      null.TimeFrom(w.ShareAt),
 			CreatedAt:    null.TimeFrom(w.CreatedAt),
 			UpdatedAt:    null.TimeFrom(w.UpdatedAt),
 			DeletedAt:    null.TimeFrom(w.DeletedAt),
@@ -538,6 +574,8 @@ func (w SharePlain) ToShare(allows ...string) Share {
 			res.Status = null.IntFrom(int64(w.Status))
 		case "share_user":
 			res.ShareUser = null.StringFrom(w.ShareUser)
+		case "share_user_id":
+			res.ShareUserId = null.IntFrom(int64(w.ShareUserId))
 		case "create_user_id":
 			res.CreateUserId = null.IntFrom(int64(w.CreateUserId))
 		case "note":
@@ -548,6 +586,8 @@ func (w SharePlain) ToShare(allows ...string) Share {
 			res.JoinCount = null.IntFrom(int64(w.JoinCount))
 		case "attachments":
 			res.Attachments = null.StringFrom(w.Attachments)
+		case "share_at":
+			res.ShareAt = null.TimeFrom(w.ShareAt)
 		case "created_at":
 			res.CreatedAt = null.TimeFrom(w.CreatedAt)
 		case "updated_at":
@@ -576,11 +616,13 @@ func (w *Share) ToSharePlain() SharePlain {
 		SubjectType:  w.SubjectType.String,
 		Status:       int8(w.Status.Int64),
 		ShareUser:    w.ShareUser.String,
+		ShareUserId:  w.ShareUserId.Int64,
 		CreateUserId: w.CreateUserId.Int64,
 		Note:         w.Note.String,
 		LikeCount:    w.LikeCount.Int64,
 		JoinCount:    w.JoinCount.Int64,
 		Attachments:  w.Attachments.String,
+		ShareAt:      w.ShareAt.Time,
 		CreatedAt:    w.CreatedAt.Time,
 		UpdatedAt:    w.UpdatedAt.Time,
 		DeletedAt:    w.DeletedAt.Time,
@@ -607,11 +649,13 @@ const (
 	ShareFieldSubjectType  = "subject_type"
 	ShareFieldStatus       = "status"
 	ShareFieldShareUser    = "share_user"
+	ShareFieldShareUserId  = "share_user_id"
 	ShareFieldCreateUserId = "create_user_id"
 	ShareFieldNote         = "note"
 	ShareFieldLikeCount    = "like_count"
 	ShareFieldJoinCount    = "join_count"
 	ShareFieldAttachments  = "attachments"
+	ShareFieldShareAt      = "share_at"
 	ShareFieldCreatedAt    = "created_at"
 	ShareFieldUpdatedAt    = "updated_at"
 	ShareFieldDeletedAt    = "deleted_at"
@@ -626,11 +670,13 @@ func ShareFields() []string {
 		"subject_type",
 		"status",
 		"share_user",
+		"share_user_id",
 		"create_user_id",
 		"note",
 		"like_count",
 		"join_count",
 		"attachments",
+		"share_at",
 		"created_at",
 		"updated_at",
 		"deleted_at",
@@ -775,11 +821,13 @@ func (m *ShareModel) Get(builders ...query.SQLBuilder) ([]Share, error) {
 			"subject_type",
 			"status",
 			"share_user",
+			"share_user_id",
 			"create_user_id",
 			"note",
 			"like_count",
 			"join_count",
 			"attachments",
+			"share_at",
 			"created_at",
 			"updated_at",
 			"deleted_at",
@@ -804,6 +852,8 @@ func (m *ShareModel) Get(builders ...query.SQLBuilder) ([]Share, error) {
 			selectFields = append(selectFields, f)
 		case "share_user":
 			selectFields = append(selectFields, f)
+		case "share_user_id":
+			selectFields = append(selectFields, f)
 		case "create_user_id":
 			selectFields = append(selectFields, f)
 		case "note":
@@ -813,6 +863,8 @@ func (m *ShareModel) Get(builders ...query.SQLBuilder) ([]Share, error) {
 		case "join_count":
 			selectFields = append(selectFields, f)
 		case "attachments":
+			selectFields = append(selectFields, f)
+		case "share_at":
 			selectFields = append(selectFields, f)
 		case "created_at":
 			selectFields = append(selectFields, f)
@@ -842,6 +894,8 @@ func (m *ShareModel) Get(builders ...query.SQLBuilder) ([]Share, error) {
 				scanFields = append(scanFields, &shareVar.Status)
 			case "share_user":
 				scanFields = append(scanFields, &shareVar.ShareUser)
+			case "share_user_id":
+				scanFields = append(scanFields, &shareVar.ShareUserId)
 			case "create_user_id":
 				scanFields = append(scanFields, &shareVar.CreateUserId)
 			case "note":
@@ -852,6 +906,8 @@ func (m *ShareModel) Get(builders ...query.SQLBuilder) ([]Share, error) {
 				scanFields = append(scanFields, &shareVar.JoinCount)
 			case "attachments":
 				scanFields = append(scanFields, &shareVar.Attachments)
+			case "share_at":
+				scanFields = append(scanFields, &shareVar.ShareAt)
 			case "created_at":
 				scanFields = append(scanFields, &shareVar.CreatedAt)
 			case "updated_at":

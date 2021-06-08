@@ -83,7 +83,7 @@ func (s Provider) routes(cc infra.Resolver, router web.Router, mw web.RequestMid
 	gob.Register(service.UserInfo{})
 
 	authMW := mw.BeforeInterceptor(func(ctx web.Context) web.Response {
-		if str.HasPrefixes(ctx.CurrentRoute().GetName(), []string{"auth:login", "inspect:"}) {
+		if str.HasPrefixes(ctx.CurrentRoute().GetName(), []string{"auth:login", "inspect:"}) || str.HasSuffixes(ctx.CurrentRoute().GetName(), []string{"@public"}) {
 			return nil
 		}
 

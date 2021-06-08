@@ -122,18 +122,19 @@ func (p shareService) FinishShare(ctx context.Context, shareID int64, sf ShareFi
 		// 	return nil
 		// }
 
+		plan, err := share.SharePlan().First()
+		if err != nil {
+			return err
+		}
+
 		share.Status = null.IntFrom(int64(ShareStatusFinished))
+		share.ShareAt = plan.ShareAt
 
 		var attas []string
 		_ = coll.MustNew(sf.Attachments).Map(func(val int64) string { return strconv.Itoa(int(val)) }).All(&attas)
 
 		share.Attachments = null.StringFrom(strings.Join(attas, ","))
 		if err := share.Save(model.ShareFieldStatus, model.ShareFieldAttachments); err != nil {
-			return err
-		}
-
-		plan, err := share.SharePlan().First()
-		if err != nil {
 			return err
 		}
 

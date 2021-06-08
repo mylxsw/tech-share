@@ -225,6 +225,10 @@ func main() {
 		m.Schema("202105071404").Table("share_plan", func(builder *migrate.Builder) {
 			builder.String("share_room", 255).Nullable(true).Comment("分享会议室")
 		})
+		m.Schema("202106071717").Table("share", func(builder *migrate.Builder) {
+			builder.Integer("share_user_id", false, true).Nullable(true).Comment("分享用户 id")
+			builder.Timestamp("share_at", 0).Nullable(true).Comment("分享时间，冗余字段，便于查询")
+		})
 
 		if err := m.Run(); err != nil {
 			panic(err)

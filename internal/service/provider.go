@@ -12,6 +12,7 @@ func (p Provider) Register(cc infra.Binder) {
 	cc.MustSingletonOverride(NewShareService)
 	cc.MustSingletonOverride(NewAttachmentService)
 	cc.MustSingletonOverride(NewUserService)
+	cc.MustSingletonOverride(NewCreditService)
 }
 
 func (p Provider) Boot(cc infra.Resolver) {

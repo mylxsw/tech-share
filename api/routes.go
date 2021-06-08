@@ -15,5 +15,6 @@ func authedControllers(cc container.Resolver, conf *config.Config) []web.Control
 		controller.NewUserController(cc, conf),
 		controller.NewAuthController(cc, conf),
 		controller.NewInspectController(cc, conf),
+		controller.NewCreditController(cc, conf),
 	}
 }

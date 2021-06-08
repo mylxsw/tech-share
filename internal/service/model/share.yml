@@ -22,6 +22,8 @@ models:
       type: int8
     - name: share_user
       type: string
+    - name: share_user_id
+      type: int64
     - name: create_user_id
       type: int64
     - name: note
@@ -32,3 +34,5 @@ models:
       type: int64
     - name: attachments
       type: string
+    - name: share_at
+      type: time.Time
