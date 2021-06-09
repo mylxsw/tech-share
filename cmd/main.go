@@ -83,6 +83,12 @@ func main() {
 		Value:  "dc=example,dc=com",
 	}))
 	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
+		Name:   "ldap_user_filter",
+		Usage:  "LDAP user filter",
+		EnvVar: "TECH_SHARE_LDAP_USER_FILTER",
+		Value:  "CN=all-staff,CN=Users,DC=example,DC=com",
+	}))
+	app.AddFlags(altsrc.NewStringFlag(cli.StringFlag{
 		Name:   "session_key",
 		Usage:  "Session key",
 		EnvVar: "TECH_SHARE_SESSION_KEY",
@@ -142,6 +148,7 @@ func main() {
 				Password:    c.String("ldap_password"),
 				DisplayName: "displayName",
 				UID:         "sAMAccountName",
+				UserFilter:  c.String("ldap_user_filter"),
 			},
 		}
 	})
@@ -233,6 +240,7 @@ func main() {
 		if err := m.Run(); err != nil {
 			panic(err)
 		}
+
 	})
 
 	app.Provider(api.Provider{}, localEvt.Provider{}, scheduler.Provider{})

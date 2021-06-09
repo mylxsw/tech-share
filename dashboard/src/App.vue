@@ -9,6 +9,7 @@
                     <b-nav-item href="/#/?act=" exact v-if="isLogon()">所有分享</b-nav-item>
                     <b-nav-item href="/#/?act=recently" exact v-if="isLogon()">最新分享</b-nav-item>
                     <b-nav-item href="/#/?act=my" exact v-if="isLogon()">我发起的</b-nav-item>
+                    <b-nav-item href="/#/rank" exact v-if="isLogon()">排行榜</b-nav-item>
                     <b-nav-item-dropdown right v-if="isLogon()">
                         <template #button-content>
                             <em>{{ $store.getters.user.name }}</em>

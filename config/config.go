@@ -26,6 +26,7 @@ type LDAP struct {
 	Password    string `json:"-"`
 	DisplayName string `json:"display_name"`
 	UID         string `json:"uid"`
+	UserFilter  string `json:"user_filter"`
 }
 
 func (conf *Config) Serialize() string {

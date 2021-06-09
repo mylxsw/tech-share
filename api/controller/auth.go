@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-ldap/ldap/v3"
@@ -92,7 +93,7 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 		0,
 		false,
 		fmt.Sprintf("(&(objectClass=organizationalPerson)(%s=%s))", ctl.conf.LDAP.UID, ldap.EscapeFilter(username)),
-		[]string{"objectguid", ctl.conf.LDAP.UID, ctl.conf.LDAP.DisplayName},
+		[]string{"objectguid", ctl.conf.LDAP.UID, ctl.conf.LDAP.DisplayName, "userAccountControl"},
 		nil,
 	)
 
@@ -103,6 +104,11 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 
 	if len(sr.Entries) != 1 {
 		return nil, service.NewValidateError(fmt.Errorf("用户不存在"))
+	}
+
+	// 514-禁用 512-启用
+	if sr.Entries[0].GetAttributeValue("userAccountControl") == "514" {
+		return nil, service.NewValidateError(errors.New("LDAP 用户账户已禁用"))
 	}
 
 	if ctl.conf.WeakPasswordMode {

@@ -26,7 +26,7 @@ type CreditRank struct {
 type CreditRanks []CreditRank
 
 func (t CreditRanks) Len() int           { return len(t) }
-func (t CreditRanks) Less(i, j int) bool { return t[i].Credit < t[j].Credit }
+func (t CreditRanks) Less(i, j int) bool { return t[i].Credit > t[j].Credit }
 func (t CreditRanks) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 
 type CreditRankShare struct {
