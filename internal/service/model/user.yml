@@ -10,3 +10,7 @@ models:
       type: string
     - name: name
       type: string
+    - name: account
+      type: string
+    - name: status
+      type: int8

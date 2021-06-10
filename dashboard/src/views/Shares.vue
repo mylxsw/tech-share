@@ -73,8 +73,9 @@
                         <b-form-textarea id="description-input" placeholder="Enter description" v-model="createForm.description" rows="6"/>
                     </b-form-group>
 
-                    <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input" description="留空则分享人是自己">
-                        <b-form-input id="share_user-input" v-model="createForm.share_user" type="text" placeholder="Enter share user"></b-form-input>
+                    <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input">
+                        <b-form-select v-model="createForm.share_user_id" :options="user_options"></b-form-select>
+                        <b-form-input class="mt-2" id="share_user-input" v-model="createForm.share_user" type="text" placeholder="分享人姓名" v-if="createForm.share_user_id == 0"></b-form-input>
                     </b-form-group>
                     <b-button type="submit" variant="primary">确认发起</b-button>
                 </form>
@@ -91,8 +92,9 @@
                         <b-form-textarea id="description-input" placeholder="Enter description" v-model="createForm.description" rows="6"/>
                     </b-form-group>
 
-                    <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input" description="留空则分享人是自己">
-                        <b-form-input id="share_user-input" v-model="createForm.share_user" type="text" placeholder="Enter share user"></b-form-input>
+                    <b-form-group id="share_user-input-group" label="分享人" label-for="share_user-input">
+                        <b-form-select v-model="createForm.share_user_id" :options="user_options"></b-form-select>
+                        <b-form-input class="mt-2" id="share_user-input" v-model="createForm.share_user" type="text" placeholder="分享人姓名" v-if="createForm.share_user_id == 0"></b-form-input>
                     </b-form-group>
                     <b-button type="submit" variant="primary">保存</b-button>
                 </form>
@@ -313,6 +315,8 @@ export default {
                     {key: 'atta_name', label: '名称'},
                     {key: 'opt', label: '操作'},
                 ],
+                // 用户列表
+                user_options: []
             };
         },
         computed: {
@@ -347,6 +351,7 @@ export default {
                     subject_type: '',
                     description: '',
                     share_user: this.$store.getters.user != null ? this.$store.getters.user.name : null,
+                    share_user_id: this.$store.getters.user != null ? this.$store.getters.user.id : null,
                 }
             },
             initCreatePlanForm() {
@@ -436,7 +441,7 @@ export default {
             },
             // 创建分享
             createShare() {
-                axios.post('/api/shares/', this.createForm).then(() => {
+                axios.post('/api/shares/', this.createShareUpdateData()).then(() => {
                     this.$root.$emit('bv::hide::modal', 'create-share-dialog');
                     this.ToastSuccess('创建成功');
                     this.reload();
@@ -448,11 +453,30 @@ export default {
                 this.createForm.subject_type = share.subject_type;
                 this.createForm.description = share.description;
                 this.createForm.share_user = share.share_user;
+                this.createForm.share_user_id = share.share_user_id;
 
                 this.$root.$emit('bv::show::modal', 'edit-share-dialog');
             },
+            createShareUpdateData() {
+                let data = {}
+                for (let k in this.createForm) {
+                    data[k] = this.createForm[k];
+                }
+
+                if (this.createForm.share_user_id > 0) {
+                    for (let i in this.user_options) {
+                        if (this.user_options[i].value == this.createForm.share_user_id) {
+                            data.share_user_id = this.user_options[i].value;
+                            data.share_user = this.user_options[i].text;
+                            break;
+                        }
+                    }  
+                }
+
+                return data;
+            },
             updateShare() {
-                axios.post('/api/shares/' + this.current_share.id + '/', this.createForm).then(() => {
+                axios.post('/api/shares/' + this.current_share.id + '/', this.createShareUpdateData()).then(() => {
                     this.$root.$emit('bv::hide::modal', 'edit-share-dialog');
                     this.ToastSuccess('修改成功');
                     this.reload();
@@ -647,6 +671,17 @@ export default {
 
                 return false;
             },
+            // 刷新所有用户选项
+            reloadAllUsers() {
+                axios.get('/api/users/').then(resp => {
+                    let user_options = [{value: 0, text: '-- 外部联系人 --'}];
+                    for (let i = 0; i < resp.data.length; i++) {
+                        user_options.push({value: resp.data[i].id, text: resp.data[i].name})
+                    }
+                    
+                    this.user_options = user_options;
+                }).catch(error => {this.ToastError(error)});
+            },
             // 页面刷新
             reload() {
                 let sharesEndpoint = '/api/shares/';
@@ -685,6 +720,7 @@ export default {
                 });
 
                 this.initAllForm();
+                this.reloadAllUsers();
             }
         },
         mounted() {

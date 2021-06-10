@@ -236,6 +236,10 @@ func main() {
 			builder.Integer("share_user_id", false, true).Nullable(true).Comment("分享用户 id")
 			builder.Timestamp("share_at", 0).Nullable(true).Comment("分享时间，冗余字段，便于查询")
 		})
+		m.Schema("202106100943").Table("user", func(builder *migrate.Builder) {
+			builder.String("account", 100).Comment("账号名")
+			builder.TinyInteger("status", false, true).Default(migrate.RawExpr("1")).Comment("状态：0-禁用 1-启用")
+		})
 
 		if err := m.Run(); err != nil {
 			panic(err)

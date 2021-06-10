@@ -117,6 +117,7 @@ type ShareUpdateFields struct {
 	SubjectType string `json:"subject_type" validate:"required"`
 	Description string `json:"description"`
 	ShareUser   string `json:"share_user"`
+	ShareUserId int64  `json:"share_user_id"`
 }
 
 type ShareFinishFields struct {

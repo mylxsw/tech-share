@@ -17,10 +17,12 @@ type CreditService interface {
 }
 
 type CreditRank struct {
-	UserID int64             `json:"user_id"`
-	Name   string            `json:"name"`
-	Credit int64             `json:"credit"`
-	Shares []CreditRankShare `json:"shares"`
+	UserID  int64             `json:"user_id"`
+	Name    string            `json:"name"`
+	Account string            `json:"account"`
+	Status  int8              `json:"status"`
+	Credit  int64             `json:"credit"`
+	Shares  []CreditRankShare `json:"shares"`
 }
 
 type CreditRanks []CreditRank
@@ -77,14 +79,15 @@ func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (C
 		return credits, err
 	}
 
-	usersMap := make(map[int64]string)
+	usersMap := make(map[int64]model.User)
 	srv.cc.Must(coll.MustNew(users).
 		AsMap(func(u model.User) int64 { return u.Id.ValueOrZero() }).
-		Map(func(u model.User) string { return u.Name.ValueOrZero() }).
 		All(&usersMap))
 
 	for i, cre := range credits {
-		credits[i].Name = usersMap[cre.UserID]
+		credits[i].Name = usersMap[cre.UserID].Name.ValueOrZero()
+		credits[i].Account = usersMap[cre.UserID].Account.ValueOrZero()
+		credits[i].Status = int8(usersMap[cre.UserID].Status.ValueOrZero())
 	}
 
 	return credits, nil

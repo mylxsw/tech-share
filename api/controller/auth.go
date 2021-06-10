@@ -122,7 +122,11 @@ func (ctl AuthController) LdapLogin(ctx web.Context, req web.Request, userSrv se
 	user, err := userSrv.LoadUser(
 		context.TODO(),
 		uuid.Must(uuid.FromBytes(sr.Entries[0].GetRawAttributeValue("objectGUID"))).String(),
-		sr.Entries[0].GetAttributeValue(ctl.conf.LDAP.DisplayName),
+		service.UserInfo{
+			Name:    sr.Entries[0].GetAttributeValue(ctl.conf.LDAP.DisplayName),
+			Account: sr.Entries[0].GetAttributeValue(ctl.conf.LDAP.UID),
+			Status:  service.UserStatusEnabled,
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("加载用户失败: %w", err)

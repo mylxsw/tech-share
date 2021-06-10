@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/mylxsw/glacier/infra"
@@ -21,6 +22,7 @@ func NewUserController(cc infra.Resolver, conf *config.Config) web.Controller {
 func (ctl UserController) Register(router web.Router) {
 	router.Group("/users", func(router web.Router) {
 		router.Get("/me", ctl.CurrentUser)
+		router.Get("/", ctl.Users)
 	})
 }
 
@@ -32,4 +34,8 @@ func (ctl UserController) CurrentUser(req web.Request) (*User, error) {
 
 	user := userLogin.(service.UserInfo)
 	return &User{ID: user.Id, Name: user.Name, UUID: user.Uuid}, nil
+}
+
+func (ctl UserController) Users(userSrv service.UserService) ([]service.UserBasic, error) {
+	return userSrv.Users(context.TODO())
 }

@@ -24,6 +24,8 @@ type User struct {
 	Id        null.Int
 	Uuid      null.String
 	Name      null.String
+	Account   null.String
+	Status    null.Int
 	CreatedAt null.Time
 	UpdatedAt null.Time
 }
@@ -44,6 +46,8 @@ type userOriginal struct {
 	Id        null.Int
 	Uuid      null.String
 	Name      null.String
+	Account   null.String
+	Status    null.Int
 	CreatedAt null.Time
 	UpdatedAt null.Time
 }
@@ -63,6 +67,12 @@ func (inst *User) Staled(onlyFields ...string) bool {
 			return true
 		}
 		if inst.Name != inst.original.Name {
+			return true
+		}
+		if inst.Account != inst.original.Account {
+			return true
+		}
+		if inst.Status != inst.original.Status {
 			return true
 		}
 		if inst.CreatedAt != inst.original.CreatedAt {
@@ -85,6 +95,14 @@ func (inst *User) Staled(onlyFields ...string) bool {
 				}
 			case "name":
 				if inst.Name != inst.original.Name {
+					return true
+				}
+			case "account":
+				if inst.Account != inst.original.Account {
+					return true
+				}
+			case "status":
+				if inst.Status != inst.original.Status {
 					return true
 				}
 			case "created_at":
@@ -122,6 +140,12 @@ func (inst *User) StaledKV(onlyFields ...string) query.KV {
 		if inst.Name != inst.original.Name {
 			kv["name"] = inst.Name
 		}
+		if inst.Account != inst.original.Account {
+			kv["account"] = inst.Account
+		}
+		if inst.Status != inst.original.Status {
+			kv["status"] = inst.Status
+		}
 		if inst.CreatedAt != inst.original.CreatedAt {
 			kv["created_at"] = inst.CreatedAt
 		}
@@ -143,6 +167,14 @@ func (inst *User) StaledKV(onlyFields ...string) query.KV {
 			case "name":
 				if inst.Name != inst.original.Name {
 					kv["name"] = inst.Name
+				}
+			case "account":
+				if inst.Account != inst.original.Account {
+					kv["account"] = inst.Account
+				}
+			case "status":
+				if inst.Status != inst.original.Status {
+					kv["status"] = inst.Status
 				}
 			case "created_at":
 				if inst.CreatedAt != inst.original.CreatedAt {
@@ -254,6 +286,8 @@ type UserPlain struct {
 	Id        int64
 	Uuid      string
 	Name      string
+	Account   string
+	Status    int8
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -265,6 +299,8 @@ func (w UserPlain) ToUser(allows ...string) User {
 			Id:        null.IntFrom(int64(w.Id)),
 			Uuid:      null.StringFrom(w.Uuid),
 			Name:      null.StringFrom(w.Name),
+			Account:   null.StringFrom(w.Account),
+			Status:    null.IntFrom(int64(w.Status)),
 			CreatedAt: null.TimeFrom(w.CreatedAt),
 			UpdatedAt: null.TimeFrom(w.UpdatedAt),
 		}
@@ -280,6 +316,10 @@ func (w UserPlain) ToUser(allows ...string) User {
 			res.Uuid = null.StringFrom(w.Uuid)
 		case "name":
 			res.Name = null.StringFrom(w.Name)
+		case "account":
+			res.Account = null.StringFrom(w.Account)
+		case "status":
+			res.Status = null.IntFrom(int64(w.Status))
 		case "created_at":
 			res.CreatedAt = null.TimeFrom(w.CreatedAt)
 		case "updated_at":
@@ -303,6 +343,8 @@ func (w *User) ToUserPlain() UserPlain {
 		Id:        w.Id.Int64,
 		Uuid:      w.Uuid.String,
 		Name:      w.Name.String,
+		Account:   w.Account.String,
+		Status:    int8(w.Status.Int64),
 		CreatedAt: w.CreatedAt.Time,
 		UpdatedAt: w.UpdatedAt.Time,
 	}
@@ -325,6 +367,8 @@ const (
 	UserFieldId        = "id"
 	UserFieldUuid      = "uuid"
 	UserFieldName      = "name"
+	UserFieldAccount   = "account"
+	UserFieldStatus    = "status"
 	UserFieldCreatedAt = "created_at"
 	UserFieldUpdatedAt = "updated_at"
 )
@@ -335,6 +379,8 @@ func UserFields() []string {
 		"id",
 		"uuid",
 		"name",
+		"account",
+		"status",
 		"created_at",
 		"updated_at",
 	}
@@ -470,6 +516,8 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 			"id",
 			"uuid",
 			"name",
+			"account",
+			"status",
 			"created_at",
 			"updated_at",
 		)
@@ -486,6 +534,10 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 		case "uuid":
 			selectFields = append(selectFields, f)
 		case "name":
+			selectFields = append(selectFields, f)
+		case "account":
+			selectFields = append(selectFields, f)
+		case "status":
 			selectFields = append(selectFields, f)
 		case "created_at":
 			selectFields = append(selectFields, f)
@@ -507,6 +559,10 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 				scanFields = append(scanFields, &userVar.Uuid)
 			case "name":
 				scanFields = append(scanFields, &userVar.Name)
+			case "account":
+				scanFields = append(scanFields, &userVar.Account)
+			case "status":
+				scanFields = append(scanFields, &userVar.Status)
 			case "created_at":
 				scanFields = append(scanFields, &userVar.CreatedAt)
 			case "updated_at":

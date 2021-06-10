@@ -236,6 +236,7 @@ func (p shareService) CreateShare(ctx context.Context, share Share) (int64, erro
 			model.ShareFieldSubjectType:  share.SubjectType,
 			model.ShareFieldDescription:  share.Description,
 			model.ShareFieldShareUser:    share.ShareUser,
+			model.ShareFieldShareUserId:  share.ShareUserId,
 			model.ShareFieldCreateUserId: share.CreateUserId,
 			model.ShareFieldLikeCount:    share.LikeCount,
 			model.ShareFieldJoinCount:    share.JoinCount,
@@ -364,6 +365,7 @@ func (p shareService) UpdateShare(ctx context.Context, id int64, share ShareUpda
 	old.SubjectType = null.StringFrom(share.SubjectType)
 	old.Description = null.StringFrom(share.Description)
 	old.ShareUser = null.StringFrom(share.ShareUser)
+	old.ShareUserId = null.IntFrom(share.ShareUserId)
 
 	return old.Save()
 }
