@@ -51,7 +51,7 @@ type creditService struct {
 func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (CreditRanks, error) {
 	shares, err := model.NewShareModel(srv.db).Get(query.Builder().
 		WhereNotNull(model.ShareFieldShareUserId).
-		// Where(model.ShareFieldStatus, ShareStatusFinished).
+		Where(model.ShareFieldStatus, ShareStatusFinished).
 		Where(model.ShareFieldShareAt, ">=", startAt))
 	if err != nil {
 		return nil, err

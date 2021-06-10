@@ -86,7 +86,7 @@ type Plan struct {
 }
 
 type PlanUpdateFields struct {
-	ShareAt      time.Time `json:"share_at" validate:"required"`
+	ShareAt      time.Time `json:"share_at,omitempty" validate:"required"`
 	ShareRoom    string    `json:"share_room"`
 	PlanDuration int64     `json:"plan_duration" validate:"required,gt=0"`
 	Note         string    `json:"note"`
@@ -107,7 +107,7 @@ type Share struct {
 
 type ShareExt struct {
 	Share
-	ShareAt      time.Time `json:"share_at"`
+	ShareAt      time.Time `json:"share_at,omitempty"`
 	ShareRoom    string    `json:"share_room"`
 	PlanDuration int64     `json:"plan_duration"`
 }

@@ -359,7 +359,7 @@ export default {
                     share_date: '',
                     share_time: '',
                     share_room: '',
-                    plan_duration: 0,
+                    plan_duration: 30,
                     note: '',
                 };
             },
@@ -491,7 +491,9 @@ export default {
             createSharePlan() {
                 let params = {};
                 
-                params.share_at = moment(this.createPlanForm.share_date + ' ' + this.createPlanForm.share_time, 'YYYY-MM-DD hh:mm:ss').format();
+                params.share_date = this.createPlanForm.share_date;
+                params.share_time = this.createPlanForm.share_time;
+
                 params.plan_duration = parseInt(this.createPlanForm.plan_duration);
                 params.note = this.createPlanForm.note;
                 params.share_room  = this.createPlanForm.share_room;

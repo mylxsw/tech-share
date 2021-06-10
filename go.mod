@@ -21,7 +21,9 @@ require (
 	github.com/mylxsw/glacier v0.0.0-20210610051612-a9bee389af17
 	github.com/mylxsw/go-utils v0.0.0-20210425040828-4c967550cedf
 	github.com/prometheus/client_golang v1.8.0
+	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli v1.22.5
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sys v0.0.0-20210112080510-489259a85091 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect

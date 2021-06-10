@@ -168,7 +168,6 @@ github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/json-iterator/go v1.1.7/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/json-iterator/go v1.1.8/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
-github.com/json-iterator/go v1.1.10 h1:Kz6Cvnvv2wGdaG/V8yMvfkmNiXq9Ya2KUv4rouJJr68=
 github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/json-iterator/go v1.1.11 h1:uVUAXhF2To8cbw/3xN3pxj6kk7TYKs98NIrTqPlMWAQ=
 github.com/json-iterator/go v1.1.11/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
@@ -218,18 +217,10 @@ github.com/mylxsw/asteria v0.0.0-20210423061904-9b17f4c87f96/go.mod h1:LLAdhjXLJ
 github.com/mylxsw/coll v0.0.0-20200612040853-4275264442f9/go.mod h1:ajdrWwm8dvgQ2BJw5+Z9DA1hw76v1fjD6GpIqjjQ6xo=
 github.com/mylxsw/coll v0.0.0-20210423142615-0a2e3d0afc0e h1:BX4A2trfIGiDWAr/ORZQI6tW+5QktEaN/PZ4wuYilkA=
 github.com/mylxsw/coll v0.0.0-20210423142615-0a2e3d0afc0e/go.mod h1:ajdrWwm8dvgQ2BJw5+Z9DA1hw76v1fjD6GpIqjjQ6xo=
-github.com/mylxsw/container v0.0.0-20210320032614-4c230b312e04 h1:Oqh+X6IO7z8ORo3tmLEfsenEPE9aHhYv0WOKFL4moQY=
-github.com/mylxsw/container v0.0.0-20210320032614-4c230b312e04/go.mod h1:UDbF8EtqT7jB0yDc6g9u4P8ORvw4RbFot1QputpgR5U=
 github.com/mylxsw/container v0.0.0-20210518064353-cefb03feb6aa h1:ruKLeEMUH7RWlgzQSBuwJhGLHIv0uh2P4qLAAJRuF/U=
 github.com/mylxsw/container v0.0.0-20210518064353-cefb03feb6aa/go.mod h1:UDbF8EtqT7jB0yDc6g9u4P8ORvw4RbFot1QputpgR5U=
 github.com/mylxsw/eloquent v0.0.0-20210424074519-a8d5b311ea34 h1:uIZ15m1ujtqs6RfJHKB2IXotawsSnGmn9GdIGdcZhro=
 github.com/mylxsw/eloquent v0.0.0-20210424074519-a8d5b311ea34/go.mod h1:llobtLwRdFwm8Bw5dZ1sHihFP7cIB/egh1lFWNgh7Hc=
-github.com/mylxsw/glacier v0.0.0-20210426031114-eb703c96fdd1 h1:z9fwBE2PnRuRDRfE/nHhAcN+vagO/8TZi22urEX3JWA=
-github.com/mylxsw/glacier v0.0.0-20210426031114-eb703c96fdd1/go.mod h1:oW01aUs3QanOaXKTgqZ5OjeT6RF0A5oZyu0WEU0pXWY=
-github.com/mylxsw/glacier v0.0.0-20210426032252-8887ceaa1f8a h1:rKPcANU9wlK89/6PYLWQMAuRCIXyiLNCIUbANIkWklo=
-github.com/mylxsw/glacier v0.0.0-20210426032252-8887ceaa1f8a/go.mod h1:oW01aUs3QanOaXKTgqZ5OjeT6RF0A5oZyu0WEU0pXWY=
-github.com/mylxsw/glacier v0.0.0-20210610051101-efd9550378b6 h1:GIFZfxyhdDZ5MkgrwONfEwzF9+HK5z3eHvwhF2c7z+U=
-github.com/mylxsw/glacier v0.0.0-20210610051101-efd9550378b6/go.mod h1:UGosag9DhWsmhHoAiqjPrfvDNAwQzi1ogGw7TjCdUy8=
 github.com/mylxsw/glacier v0.0.0-20210610051612-a9bee389af17 h1:/AJluIpGDbLV0H92Aiq3+N5CvmIVRcW4waml5t/BMtE=
 github.com/mylxsw/glacier v0.0.0-20210610051612-a9bee389af17/go.mod h1:UGosag9DhWsmhHoAiqjPrfvDNAwQzi1ogGw7TjCdUy8=
 github.com/mylxsw/go-utils v0.0.0-20210307083839-f7ab4eeb1788/go.mod h1:qXS/ktGB0Hi3aIPCLKbFX0fsCS6ELg7JqbpQvLSX6ic=

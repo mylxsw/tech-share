@@ -26,6 +26,7 @@ type User struct {
 	Name      null.String
 	Account   null.String
 	Status    null.Int
+	Password  null.String `json:"-"`
 	CreatedAt null.Time
 	UpdatedAt null.Time
 }
@@ -48,6 +49,7 @@ type userOriginal struct {
 	Name      null.String
 	Account   null.String
 	Status    null.Int
+	Password  null.String
 	CreatedAt null.Time
 	UpdatedAt null.Time
 }
@@ -73,6 +75,9 @@ func (inst *User) Staled(onlyFields ...string) bool {
 			return true
 		}
 		if inst.Status != inst.original.Status {
+			return true
+		}
+		if inst.Password != inst.original.Password {
 			return true
 		}
 		if inst.CreatedAt != inst.original.CreatedAt {
@@ -103,6 +108,10 @@ func (inst *User) Staled(onlyFields ...string) bool {
 				}
 			case "status":
 				if inst.Status != inst.original.Status {
+					return true
+				}
+			case "password":
+				if inst.Password != inst.original.Password {
 					return true
 				}
 			case "created_at":
@@ -146,6 +155,9 @@ func (inst *User) StaledKV(onlyFields ...string) query.KV {
 		if inst.Status != inst.original.Status {
 			kv["status"] = inst.Status
 		}
+		if inst.Password != inst.original.Password {
+			kv["password"] = inst.Password
+		}
 		if inst.CreatedAt != inst.original.CreatedAt {
 			kv["created_at"] = inst.CreatedAt
 		}
@@ -175,6 +187,10 @@ func (inst *User) StaledKV(onlyFields ...string) query.KV {
 			case "status":
 				if inst.Status != inst.original.Status {
 					kv["status"] = inst.Status
+				}
+			case "password":
+				if inst.Password != inst.original.Password {
+					kv["password"] = inst.Password
 				}
 			case "created_at":
 				if inst.CreatedAt != inst.original.CreatedAt {
@@ -288,6 +304,7 @@ type UserPlain struct {
 	Name      string
 	Account   string
 	Status    int8
+	Password  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -301,6 +318,7 @@ func (w UserPlain) ToUser(allows ...string) User {
 			Name:      null.StringFrom(w.Name),
 			Account:   null.StringFrom(w.Account),
 			Status:    null.IntFrom(int64(w.Status)),
+			Password:  null.StringFrom(w.Password),
 			CreatedAt: null.TimeFrom(w.CreatedAt),
 			UpdatedAt: null.TimeFrom(w.UpdatedAt),
 		}
@@ -320,6 +338,8 @@ func (w UserPlain) ToUser(allows ...string) User {
 			res.Account = null.StringFrom(w.Account)
 		case "status":
 			res.Status = null.IntFrom(int64(w.Status))
+		case "password":
+			res.Password = null.StringFrom(w.Password)
 		case "created_at":
 			res.CreatedAt = null.TimeFrom(w.CreatedAt)
 		case "updated_at":
@@ -345,6 +365,7 @@ func (w *User) ToUserPlain() UserPlain {
 		Name:      w.Name.String,
 		Account:   w.Account.String,
 		Status:    int8(w.Status.Int64),
+		Password:  w.Password.String,
 		CreatedAt: w.CreatedAt.Time,
 		UpdatedAt: w.UpdatedAt.Time,
 	}
@@ -369,6 +390,7 @@ const (
 	UserFieldName      = "name"
 	UserFieldAccount   = "account"
 	UserFieldStatus    = "status"
+	UserFieldPassword  = "password"
 	UserFieldCreatedAt = "created_at"
 	UserFieldUpdatedAt = "updated_at"
 )
@@ -381,6 +403,7 @@ func UserFields() []string {
 		"name",
 		"account",
 		"status",
+		"password",
 		"created_at",
 		"updated_at",
 	}
@@ -518,6 +541,7 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 			"name",
 			"account",
 			"status",
+			"password",
 			"created_at",
 			"updated_at",
 		)
@@ -538,6 +562,8 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 		case "account":
 			selectFields = append(selectFields, f)
 		case "status":
+			selectFields = append(selectFields, f)
+		case "password":
 			selectFields = append(selectFields, f)
 		case "created_at":
 			selectFields = append(selectFields, f)
@@ -563,6 +589,8 @@ func (m *UserModel) Get(builders ...query.SQLBuilder) ([]User, error) {
 				scanFields = append(scanFields, &userVar.Account)
 			case "status":
 				scanFields = append(scanFields, &userVar.Status)
+			case "password":
+				scanFields = append(scanFields, &userVar.Password)
 			case "created_at":
 				scanFields = append(scanFields, &userVar.CreatedAt)
 			case "updated_at":

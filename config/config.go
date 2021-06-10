@@ -17,6 +17,7 @@ type Config struct {
 	SessionKey       string `json:"-"`
 	LDAP             LDAP   `json:"ldap"`
 	WeakPasswordMode bool   `json:"weak_password_mode"`
+	AuthProvider     string `json:"auth_provider"`
 }
 
 type LDAP struct {

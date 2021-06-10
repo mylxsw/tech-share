@@ -15,6 +15,7 @@ import (
 type UserService interface {
 	Users(ctx context.Context) ([]UserBasic, error)
 	LoadUser(ctx context.Context, uuid string, userInfo UserInfo) (*UserInfo, error)
+	LoadUserByAccount(ctx context.Context, account string) (*UserInfo, error)
 }
 
 func NewUserService(cc infra.Resolver, db *sql.DB) UserService {
@@ -27,11 +28,12 @@ type userService struct {
 }
 
 type UserInfo struct {
-	Id      int64
-	Uuid    string
-	Name    string
-	Account string
-	Status  int8
+	Id       int64  `json:"id"`
+	Uuid     string `json:"uuid"`
+	Name     string `json:"name"`
+	Account  string `json:"account"`
+	Status   int8   `json:"status"`
+	Password string `json:"-"`
 }
 
 const (
@@ -61,6 +63,18 @@ func (s userService) Users(ctx context.Context) ([]UserBasic, error) {
 	return results, nil
 }
 
+func (s userService) LoadUserByAccount(ctx context.Context, account string) (*UserInfo, error) {
+	user, err := model.NewUserModel(s.db).First(query.Builder().Where(model.UserFieldAccount, account))
+	if err != nil && err != query.ErrNoResult {
+		return nil, err
+	}
+
+	res := UserInfo{}
+	_ = copier.Copy(&res, user)
+
+	return &res, nil
+}
+
 func (s userService) LoadUser(ctx context.Context, uuid string, userInfo UserInfo) (*UserInfo, error) {
 	user, err := model.NewUserModel(s.db).First(query.Builder().Where(model.UserFieldUuid, uuid))
 	if err != nil && err != query.ErrNoResult {
@@ -69,10 +83,11 @@ func (s userService) LoadUser(ctx context.Context, uuid string, userInfo UserInf
 
 	if err == query.ErrNoResult {
 		userID, err := model.NewUserModel(s.db).Create(query.KV{
-			model.UserFieldUuid:    uuid,
-			model.UserFieldName:    userInfo.Name,
-			model.UserFieldAccount: userInfo.Account,
-			model.UserFieldStatus:  userInfo.Status,
+			model.UserFieldUuid:     uuid,
+			model.UserFieldName:     userInfo.Name,
+			model.UserFieldAccount:  userInfo.Account,
+			model.UserFieldStatus:   userInfo.Status,
+			model.UserFieldPassword: userInfo.Password,
 		})
 		if err != nil {
 			return nil, err

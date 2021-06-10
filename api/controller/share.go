@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -269,6 +271,14 @@ func (ctl ShareController) LeaveShare(ctx web.Context, req web.Request, shareSrv
 	return err
 }
 
+type PlanUpdateFields struct {
+	ShareDate    string `json:"share_date,omitempty"`
+	ShareTime    string `json:"share_time,omitempty"`
+	ShareRoom    string `json:"share_room"`
+	PlanDuration int64  `json:"plan_duration"`
+	Note         string `json:"note"`
+}
+
 // CreateOrUpdateSharePlan create or update a share plan
 func (ctl ShareController) CreateOrUpdateSharePlan(ctx web.Context, req web.Request, shareSrv service.ShareService) error {
 	id, err := strconv.Atoi(req.PathVar("id"))
@@ -276,12 +286,33 @@ func (ctl ShareController) CreateOrUpdateSharePlan(ctx web.Context, req web.Requ
 		return err
 	}
 
-	var plan service.PlanUpdateFields
+	var plan PlanUpdateFields
 	if err := req.Unmarshal(&plan); err != nil {
 		return err
 	}
 
-	_, err = shareSrv.CreateOrUpdatePlan(context.TODO(), int64(id), plan)
+	if plan.ShareDate == "" {
+		return service.NewValidateError(errors.New("计划分享日期不能为空"))
+	}
+
+	shareAt, err := time.Parse("2006-01-02", plan.ShareDate)
+	if err != nil {
+		return service.NewValidateError(fmt.Errorf("计划分享日期格式不合法: %v", err))
+	}
+
+	if plan.ShareTime != "" {
+		shareAt, err = time.Parse("2006-01-02 15:04", fmt.Sprintf("%s %s", shareAt.Format("2006-01-02"), plan.ShareTime))
+		if err != nil {
+			return service.NewValidateError(fmt.Errorf("计划分享时间格式不合法: %v", err))
+		}
+	}
+
+	_, err = shareSrv.CreateOrUpdatePlan(context.TODO(), int64(id), service.PlanUpdateFields{
+		ShareAt:      shareAt,
+		ShareRoom:    plan.ShareRoom,
+		PlanDuration: plan.PlanDuration,
+		Note:         plan.Note,
+	})
 	return err
 }
 

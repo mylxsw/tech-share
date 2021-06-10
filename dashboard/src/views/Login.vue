@@ -35,7 +35,7 @@ export default {
             onSubmit(e) {
                 e.preventDefault();
                 
-                axios.post('/api/auth/login-ldap/', this.form).then(response => {
+                axios.post('/api/auth/login/', this.form).then(response => {
                    this.ToastSuccess('Login as ' + response.data.name);
                    window.location.href = '/';
                 }).catch(error => {

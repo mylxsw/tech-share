@@ -15,6 +15,9 @@ import (
 	"github.com/mylxsw/glacier/listener"
 	"github.com/mylxsw/glacier/web"
 	"github.com/mylxsw/go-utils/str"
+	"github.com/mylxsw/tech-share/internal/auth"
+	"github.com/mylxsw/tech-share/internal/auth/database"
+	"github.com/mylxsw/tech-share/internal/auth/ldap"
 	"github.com/mylxsw/tech-share/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -35,8 +38,20 @@ func (s Provider) Aggregates() []infra.Provider {
 	}
 }
 
-func (s Provider) Register(app infra.Binder) {}
-func (s Provider) Boot(app infra.Resolver)   {}
+func (s Provider) Register(app infra.Binder) {
+	// 注册鉴权实现
+	app.MustSingletonOverride(func(conf *config.Config, userSrv service.UserService) auth.Auth {
+		switch conf.AuthProvider {
+		case "database":
+			return database.New(conf, userSrv)
+		case "ldap":
+			return ldap.New(conf)
+		default:
+			panic(fmt.Errorf("invalid auth provider: %s, only support database/ldap", conf.AuthProvider))
+		}
+	})
+}
+func (s Provider) Boot(app infra.Resolver) {}
 
 func (s Provider) exceptionHandler(ctx web.Context, err interface{}) web.Response {
 	if err2, ok := err.(error); ok {
