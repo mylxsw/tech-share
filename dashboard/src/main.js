@@ -66,13 +66,17 @@ Vue.prototype.ToastSuccess = function (message) {
     this.$bvToast.toast(message, {
         title: 'OK',
         variant: 'success',
+        autoHideDelay: 3000,
+        toaster: 'b-toaster-top-center',
     });
 };
 
 Vue.prototype.ToastError = function (message) {
     this.$bvToast.toast(this.ParseError(message), {
         title: 'ERROR',
-        variant: 'danger'
+        variant: 'danger',
+        autoHideDelay: 3000,
+        toaster: 'b-toaster-top-center',
     });
 };
 

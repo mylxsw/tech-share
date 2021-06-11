@@ -4,7 +4,7 @@
             <b-card class="mb-2">
                 <b-table :items="ranks" :fields="rank_fields">
                     <template v-slot:cell(rank)="row">
-                        <b-badge class="mr-2" :variant="rankStyle(row.index+1)">{{ row.index + 1 }}</b-badge>
+                        <b-badge class="mr-2" :variant="rankStyle(row.item.rank)">{{ row.item.rank }}</b-badge>
                     </template>
                     <template v-slot:cell(shares)="row">
                         <b-badge v-for="(s, index) in row.item.shares" :key="index" class="mr-2" variant="light">{{ s.subject }}</b-badge>

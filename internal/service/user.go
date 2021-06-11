@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"sort"
 
 	"github.com/jinzhu/copier"
 	"github.com/mylxsw/coll"
@@ -13,7 +14,7 @@ import (
 )
 
 type UserService interface {
-	Users(ctx context.Context) ([]UserBasic, error)
+	Users(ctx context.Context) (UserBasics, error)
 	LoadUser(ctx context.Context, uuid string, userInfo UserInfo) (*UserInfo, error)
 	LoadUserByAccount(ctx context.Context, account string) (*UserInfo, error)
 }
@@ -47,19 +48,26 @@ type UserBasic struct {
 	Account string `json:"account"`
 }
 
-func (s userService) Users(ctx context.Context) ([]UserBasic, error) {
+type UserBasics []UserBasic
+
+func (t UserBasics) Len() int           { return len(t) }
+func (t UserBasics) Less(i, j int) bool { return t[i].Account < t[j].Account }
+func (t UserBasics) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+
+func (s userService) Users(ctx context.Context) (UserBasics, error) {
 	users, err := model.NewUserModel(s.db).Get(query.Builder().Where(model.UserFieldStatus, UserStatusEnabled))
 	if err != nil {
 		return nil, err
 	}
 
-	results := make([]UserBasic, 0)
+	results := make(UserBasics, 0)
 	_ = coll.MustNew(users).Map(func(user model.User) UserBasic {
 		var res UserBasic
 		_ = copier.Copy(&res, user)
 		return res
 	}).All(&results)
 
+	sort.Sort(results)
 	return results, nil
 }
 

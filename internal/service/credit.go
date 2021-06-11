@@ -22,6 +22,7 @@ type CreditRank struct {
 	Account string            `json:"account"`
 	Status  int8              `json:"status"`
 	Credit  int64             `json:"credit"`
+	Rank    int64             `json:"rank"`
 	Shares  []CreditRankShare `json:"shares"`
 }
 
@@ -84,10 +85,19 @@ func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (C
 		AsMap(func(u model.User) int64 { return u.Id.ValueOrZero() }).
 		All(&usersMap))
 
+	var rank int64 = 1
+	var lastCredit int64
 	for i, cre := range credits {
 		credits[i].Name = usersMap[cre.UserID].Name.ValueOrZero()
 		credits[i].Account = usersMap[cre.UserID].Account.ValueOrZero()
 		credits[i].Status = int8(usersMap[cre.UserID].Status.ValueOrZero())
+
+		if cre.Credit != lastCredit {
+			rank = int64(i) + 1
+		}
+
+		credits[i].Rank = rank
+		lastCredit = cre.Credit
 	}
 
 	return credits, nil
