@@ -28,9 +28,15 @@ type CreditRank struct {
 
 type CreditRanks []CreditRank
 
-func (t CreditRanks) Len() int           { return len(t) }
-func (t CreditRanks) Less(i, j int) bool { return t[i].Credit > t[j].Credit }
-func (t CreditRanks) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t CreditRanks) Len() int { return len(t) }
+func (t CreditRanks) Less(i, j int) bool {
+	if t[i].Credit == t[j].Credit {
+		return t[i].Account < t[j].Account
+	}
+
+	return t[i].Credit > t[j].Credit
+}
+func (t CreditRanks) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
 
 type CreditRankShare struct {
 	ShareID int64  `json:"share_id"`
@@ -73,9 +79,8 @@ func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (C
 		return res
 	}).AsArray().Filter(func(cr CreditRank) bool { return cr.Credit > 0 }).All(&credits))
 
-	sort.Sort(credits)
-
-	users, err := model.NewUserModel(srv.db).Get(query.Builder().Select(model.UserFieldId, model.UserFieldName))
+	users, err := model.NewUserModel(srv.db).Get(query.Builder().Select(
+		model.UserFieldId, model.UserFieldName, model.UserFieldAccount))
 	if err != nil {
 		return credits, err
 	}
@@ -87,6 +92,8 @@ func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (C
 
 	var rank int64 = 1
 	var lastCredit int64
+
+	sort.Sort(credits)
 	for i, cre := range credits {
 		credits[i].Name = usersMap[cre.UserID].Name.ValueOrZero()
 		credits[i].Account = usersMap[cre.UserID].Account.ValueOrZero()
@@ -100,5 +107,7 @@ func (srv *creditService) CreditRanks(ctx context.Context, startAt time.Time) (C
 		lastCredit = cre.Credit
 	}
 
+	// 第二次排序，解决第一次排序时没有 account 字段的问题
+	sort.Sort(credits)
 	return credits, nil
 }

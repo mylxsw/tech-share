@@ -15,9 +15,10 @@ func syncUsers(authProvider auth.Auth, userSrv service.UserService) error {
 	}
 
 	for _, user := range users {
-		if _, err := userSrv.LoadUser(context.TODO(), user.UUID, service.UserInfo{
+		if _, err := userSrv.LoadUser(context.TODO(), user.Account, service.UserInfo{
 			Name:    user.Name,
 			Account: user.Account,
+			Uuid:    user.UUID,
 			Status:  user.Status,
 		}); err != nil {
 			log.With(user).Errorf("load user from database failed: %v", err)

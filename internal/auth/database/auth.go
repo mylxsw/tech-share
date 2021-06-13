@@ -15,6 +15,24 @@ type DatabaseAuth struct {
 	conf *config.Config
 }
 
+func (au DatabaseAuth) CanRegister() bool {
+	return true
+}
+
+func (au DatabaseAuth) Register(username, password string) (*auth.AuthedUser, error) {
+	user, err := au.srv.Register(context.TODO(), username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &auth.AuthedUser{
+		UUID:    user.Uuid,
+		Name:    user.Name,
+		Account: user.Account,
+		Status:  user.Status,
+	}, nil
+}
+
 func New(conf *config.Config, srv service.UserService) auth.Auth {
 	return &DatabaseAuth{srv: srv, conf: conf}
 }

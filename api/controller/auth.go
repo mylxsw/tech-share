@@ -81,10 +81,11 @@ func (ctl AuthController) Login(ctx web.Context, req web.Request, userSrv servic
 	passwordHash, _ := bcrypt.Hash(password)
 	user, err := userSrv.LoadUser(
 		context.TODO(),
-		authedUser.UUID,
+		authedUser.Account,
 		service.UserInfo{
 			Name:     authedUser.Name,
 			Account:  authedUser.Account,
+			Uuid:     authedUser.UUID,
 			Status:   authedUser.Status,
 			Password: passwordHash,
 		},

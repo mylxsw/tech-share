@@ -16,6 +16,14 @@ type LdapAuth struct {
 	conf *config.Config
 }
 
+func (provider *LdapAuth) CanRegister() bool {
+	return false
+}
+
+func (provider *LdapAuth) Register(username, password string) (*auth.AuthedUser, error) {
+	return nil, fmt.Errorf("user register is not supported in ldap mode")
+}
+
 func New(conf *config.Config) auth.Auth {
 	return &LdapAuth{conf: conf}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"sort"
 
 	"github.com/jinzhu/copier"
@@ -15,8 +16,9 @@ import (
 
 type UserService interface {
 	Users(ctx context.Context) (UserBasics, error)
-	LoadUser(ctx context.Context, uuid string, userInfo UserInfo) (*UserInfo, error)
+	LoadUser(ctx context.Context, username string, userInfo UserInfo) (*UserInfo, error)
 	LoadUserByAccount(ctx context.Context, account string) (*UserInfo, error)
+	Register(ctx context.Context, username, password string) (*UserInfo, error)
 }
 
 func NewUserService(cc infra.Resolver, db *sql.DB) UserService {
@@ -83,17 +85,43 @@ func (s userService) LoadUserByAccount(ctx context.Context, account string) (*Us
 	return &res, nil
 }
 
-func (s userService) LoadUser(ctx context.Context, uuid string, userInfo UserInfo) (*UserInfo, error) {
-	user, err := model.NewUserModel(s.db).First(query.Builder().Where(model.UserFieldUuid, uuid))
+func (s userService) Register(ctx context.Context, username, password string) (*UserInfo, error) {
+	_, err := model.NewUserModel(s.db).First(query.Builder().Where(model.UserFieldAccount, username))
+	if err != nil && err != query.ErrNoResult {
+		return nil, err
+	}
+
+	if err != query.ErrNoResult {
+		return nil, NewValidateError(fmt.Errorf("the user with name %s has been existed", username))
+	}
+
+	userID, err := model.NewUserModel(s.db).Save(model.User{
+		Account:  null.StringFrom(username),
+		Status:   null.IntFrom(int64(UserStatusEnabled)),
+		Password: null.StringFrom(password),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserInfo{
+		Id:      userID,
+		Account: username,
+		Status:  UserStatusEnabled,
+	}, nil
+}
+
+func (s userService) LoadUser(ctx context.Context, username string, userInfo UserInfo) (*UserInfo, error) {
+	user, err := model.NewUserModel(s.db).First(query.Builder().Where(model.UserFieldName, username))
 	if err != nil && err != query.ErrNoResult {
 		return nil, err
 	}
 
 	if err == query.ErrNoResult {
 		userID, err := model.NewUserModel(s.db).Create(query.KV{
-			model.UserFieldUuid:     uuid,
+			model.UserFieldUuid:     userInfo.Uuid,
 			model.UserFieldName:     userInfo.Name,
-			model.UserFieldAccount:  userInfo.Account,
+			model.UserFieldAccount:  username,
 			model.UserFieldStatus:   userInfo.Status,
 			model.UserFieldPassword: userInfo.Password,
 		})
@@ -102,14 +130,13 @@ func (s userService) LoadUser(ctx context.Context, uuid string, userInfo UserInf
 		}
 
 		userInfo.Id = userID
-		userInfo.Uuid = uuid
-
 		return &userInfo, nil
 	}
 
 	user.Name = null.StringFrom(userInfo.Name)
 	user.Account = null.StringFrom(userInfo.Account)
 	user.Status = null.IntFrom(int64(userInfo.Status))
+	user.Uuid = null.StringFrom(userInfo.Uuid)
 
 	if err := user.Save(model.UserFieldName, model.UserFieldAccount, model.UserFieldStatus); err != nil {
 		return nil, err
