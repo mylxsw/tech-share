@@ -13,7 +13,7 @@ build: build-orm
 
 .PHONY: build-orm
 build-orm:
-	orm 'internal/service/model/*.yml'
+	eloquent gen --source 'internal/service/model/*.yml'
 	gofmt -s -w internal/service/model/*.go
 
 .PHONY: run-dashboard
